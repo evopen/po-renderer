@@ -541,6 +541,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui_winit_platform"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd4cf17c0cd4dbcf2f8fef55a3592b9b7cfd970576c7302d8ba5c521b8560371"
+dependencies = [
+ "egui",
+ "winit",
+]
+
+[[package]]
 name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1254,9 +1264,11 @@ name = "po-renderer"
 version = "0.1.0"
 dependencies = [
  "egui-maligog",
+ "egui_winit_platform",
  "log",
  "maligog",
  "maligog-gltf",
+ "puffin",
  "puffin_egui",
  "spirv-builder",
  "tracing",

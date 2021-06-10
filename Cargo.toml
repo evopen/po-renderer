@@ -9,12 +9,13 @@ edition = "2018"
 maligog = { path = "../maligog" }
 maligog-gltf = { path = "../maligog-gltf" }
 egui-maligog = { path = "../egui-maligog/egui-maligog" }
+egui_winit_platform = "0.8.0"
 winit = "0.25"
 tracing = "0.1"
 tracing-subscriber = "0.2"
-puffin_egui = "0.3"
 log = "0.4"
-
+puffin = "0.5"
+puffin_egui = "0.3"
 
 
 [dependencies.spirv-builder]

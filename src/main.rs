@@ -1,4 +1,5 @@
 mod engine;
+mod profiler;
 
 fn main() {
     tracing_subscriber::fmt().with_env_filter("debug").init();
@@ -7,10 +8,19 @@ fn main() {
         .with_inner_size(winit::dpi::PhysicalSize::new(800, 600))
         .build(&event_loop)
         .unwrap();
+    let profiler_window = winit::window::WindowBuilder::new()
+        .with_inner_size(winit::dpi::PhysicalSize::new(800, 600))
+        .build(&event_loop)
+        .unwrap();
     let mut engine = engine::Engine::new(&window);
+    let mut profiler = profiler::Profiler::new(&profiler_window);
+
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = winit::event_loop::ControlFlow::Poll;
+        puffin::GlobalProfiler::lock().new_frame();
+        *control_flow = winit::event_loop::ControlFlow::Wait;
+
         engine.update(&event);
+        profiler.update(&event);
         match event {
             winit::event::Event::WindowEvent { window_id, event } => match event {
                 winit::event::WindowEvent::CloseRequested => {
