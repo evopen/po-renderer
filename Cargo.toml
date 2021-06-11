@@ -1,5 +1,7 @@
 [workspace]
 members = [
     "po-renderer",
-    "shaders/*"
 ]
+
+[profile.dev.package.spirv-builder]
+opt-level = 3
