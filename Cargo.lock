@@ -812,17 +812,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keyboard-types"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5168b1079eb8dc457c80f263c1f521578e458c1b21ae42328f65117738d31396"
-dependencies = [
- "bitflags",
- "serde",
- "unicode-segmentation",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1063,6 +1052,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c44922cb3dbb1c70b5e5f443d63b64363a898564d739ba5198e3a9138442868d"
 
 [[package]]
+name = "nfd2"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "306127f5ff8cb7c8cd3a8cf0fc162f4dc76ed589efa01ee84eb5593e7be97f75"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "nix"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1283,10 +1281,10 @@ dependencies = [
  "egui-maligog",
  "egui_winit_platform",
  "glam 0.16.0",
- "keyboard-types",
  "log",
  "maligog",
  "maligog-gltf",
+ "nfd2",
  "puffin",
  "puffin_egui",
  "spirv-builder",

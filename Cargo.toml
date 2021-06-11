@@ -17,8 +17,7 @@ log = "0.4"
 puffin = "0.5"
 puffin_egui = "0.3"
 glam = "0.16"
-keyboard-types = "0.6.1"
-
+nfd2 = "0.3.0"
 
 [dependencies.spirv-builder]
 git = "https://github.com/EmbarkStudios/rust-gpu"
