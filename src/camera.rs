@@ -2,10 +2,10 @@ use crate::{vec3, Vec3};
 
 #[derive(Debug, Clone, Default)]
 pub struct Camera {
-    location: Vec3,
-    up: Vec3,
-    front: Vec3,
-    right: Vec3,
+    pub location: Vec3,
+    pub up: Vec3,
+    pub front: Vec3,
+    pub right: Vec3,
     yaw: f32,
     pitch: f32,
     aspect_ratio: f32,
@@ -87,7 +87,8 @@ impl Camera {
         self.yaw += yaw_offset;
         self.pitch += pitch_offset;
 
-        self.pitch
+        self.pitch = self
+            .pitch
             .clamp(-std::f32::consts::FRAC_PI_2, std::f32::consts::FRAC_PI_2);
 
         self.update_camera_vector();

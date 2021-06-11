@@ -29,7 +29,7 @@ impl Engine {
         let height = window.inner_size().height;
 
         let camera = Camera::new(
-            vec3(0.0, 1.0, -1.0),
+            vec3(0.0, 0.0, -1.0),
             vec3(0.0, 0.0, 0.0),
             width as f32 / height as f32,
             std::f32::consts::FRAC_PI_3,
@@ -106,6 +106,12 @@ impl Engine {
             }
             _ => {}
         }
+
+        // log::info!(
+        //     "{} {}",
+        //     self.camera.location.to_string(),
+        //     self.camera.front.to_string()
+        // );
     }
 
     pub fn render(&mut self) {}
