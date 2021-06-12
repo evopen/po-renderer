@@ -18,6 +18,7 @@ puffin = "0.5"
 puffin_egui = "0.3"
 glam = "0.16"
 nfd2 = "0.3.0"
+rpmalloc = "0.2"
 
 [dependencies.spirv-builder]
 git = "https://github.com/EmbarkStudios/rust-gpu"

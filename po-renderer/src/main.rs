@@ -1,5 +1,8 @@
 #![cfg_attr(debug_assertions, allow(dead_code, unused_imports, unused))]
 
+#[global_allocator]
+static ALLOC: rpmalloc::RpMalloc = rpmalloc::RpMalloc;
+
 mod engine;
 mod profiler;
 
