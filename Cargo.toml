@@ -4,5 +4,7 @@ members = [
     "shaders/*"
 ]
 
-[profile.dev.package.spirv-builder]
+[profile.dev.package."*"]
 opt-level = 3
+
+
