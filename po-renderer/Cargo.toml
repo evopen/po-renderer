@@ -18,11 +18,12 @@ puffin = "0.5"
 puffin_egui = "0.3"
 glam = "0.16"
 nfd2 = "0.3.0"
+tokio = { version = "1", features = ["full"] }
 rpmalloc = "0.2"
 
 [dependencies.spirv-builder]
 git = "https://github.com/EmbarkStudios/rust-gpu"
 rev = "c3eff4d4a5a52607aa3bc8b4ba8409f6659425ee"
-features = ["use-installed-tools"]
+features = ["use-installed-tools", "watch"]
 default-features = false
 

@@ -1,6 +1,8 @@
 mod camera;
 mod input;
+mod scene_pass;
 mod ui;
+pub mod util;
 
 use egui_winit_platform::PlatformDescriptor;
 
@@ -8,10 +10,6 @@ use crate::{vec3, Vec3};
 pub use camera::{Camera, Direction};
 
 use egui_maligog::egui;
-
-enum RenderMode {
-    Wireframe,
-}
 
 pub struct Engine {
     device: maligog::Device,
@@ -29,7 +27,7 @@ pub struct Engine {
     paint_jobs: Vec<egui::ClippedMesh>,
     scene: Option<maligog_gltf::Scene>,
     input: input::Input,
-    render_mode: RenderMode,
+    scene_pass: Box<dyn scene_pass::ScenePass>,
 }
 
 impl Engine {
@@ -74,6 +72,8 @@ impl Engine {
             style: egui::Style::default(),
         });
 
+        let scene_pass = scene_pass::Wireframe::new(&device);
+
         Self {
             device,
             swapchain,
@@ -93,7 +93,7 @@ impl Engine {
                 move_speed: 0.8,
                 ..Default::default()
             },
-            render_mode: RenderMode::Wireframe,
+            scene_pass: Box::new(scene_pass),
         }
     }
 
