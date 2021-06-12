@@ -649,6 +649,9 @@ name = "glam"
 version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3abb554f8ee44336b72d522e0a7fe86a29e09f839a36022fa869a7dfe941a54b"
+dependencies = [
+ "num-traits",
+]
 
 [[package]]
 name = "glam"
@@ -1651,6 +1654,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "spirv-std"
+version = "0.4.0-alpha.9"
+source = "git+https://github.com/EmbarkStudios/rust-gpu?rev=c3eff4d4a5a52607aa3bc8b4ba8409f6659425ee#c3eff4d4a5a52607aa3bc8b4ba8409f6659425ee"
+dependencies = [
+ "bitflags",
+ "glam 0.15.2",
+ "num-traits",
+ "spirv-std-macros",
+ "spirv-types",
+]
+
+[[package]]
+name = "spirv-std-macros"
+version = "0.4.0-alpha.9"
+source = "git+https://github.com/EmbarkStudios/rust-gpu?rev=c3eff4d4a5a52607aa3bc8b4ba8409f6659425ee#c3eff4d4a5a52607aa3bc8b4ba8409f6659425ee"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "spirv-types",
+ "syn",
+]
+
+[[package]]
 name = "spirv-tools"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1669,6 +1696,11 @@ checksum = "cbb083780a3721ff6dd496dbdc3b90c033b443bec676918b89c179b330081983"
 dependencies = [
  "cc",
 ]
+
+[[package]]
+name = "spirv-types"
+version = "0.4.0-alpha.9"
+source = "git+https://github.com/EmbarkStudios/rust-gpu?rev=c3eff4d4a5a52607aa3bc8b4ba8409f6659425ee#c3eff4d4a5a52607aa3bc8b4ba8409f6659425ee"
 
 [[package]]
 name = "spirv_headers"
@@ -2050,6 +2082,13 @@ dependencies = [
  "wayland-client",
  "winapi",
  "x11-dl",
+]
+
+[[package]]
+name = "wireframe"
+version = "0.1.0"
+dependencies = [
+ "spirv-std",
 ]
 
 [[package]]
