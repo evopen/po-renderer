@@ -18,15 +18,15 @@ pub struct Transform {
 }
 
 #[spirv(vertex)]
-pub fn main(
-    #[spirv(push_constant)] transform: Transform,
-    #[spirv(position)] pos: Vec3,
-    #[spirv(position, invariant)] out_pos: &mut Vec4,
+pub fn main_vs(
+    pos: Vec3,
+    #[spirv(push_constant)] transform: &Transform,
+    #[spirv(position)] out_pos: &mut Vec4,
 ) {
     *out_pos = transform.projection * transform.view * transform.model * pos.extend(1.0);
 }
 
 #[spirv(fragment)]
-pub fn closest_hit(output: &mut Vec4) {
+pub fn main_fs(output: &mut Vec4) {
     *output = vec4(0.0, 1.0, 0.0, 1.0);
 }
