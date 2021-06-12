@@ -8,8 +8,8 @@ pub struct Camera {
     pub right: Vec3,
     yaw: f32,
     pitch: f32,
-    aspect_ratio: f32,
-    fov: f32,
+    pub aspect_ratio: f32,
+    pub fov: f32,
 }
 
 pub enum Direction {

@@ -1,9 +1,12 @@
+use async_trait::async_trait;
+use bytemuck::{Pod, Zeroable};
 use maligog::vk;
 use maligog::Device;
 
 use crate::engine::util;
 
-#[derive(Debug)]
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Zeroable, Pod)]
 struct Transform {
     model: glam::Mat4,
     view: glam::Mat4,
@@ -17,8 +20,6 @@ pub struct Wireframe {
     pipeline_layout: maligog::PipelineLayout,
     render_pass: maligog::RenderPass,
 }
-
-impl super::ScenePass for Wireframe {}
 
 impl Wireframe {
     pub fn new(device: &Device) -> Self {
@@ -88,22 +89,6 @@ impl Wireframe {
         }
     }
 
-    pub async fn refresh_pipeline(&mut self) {
-        self.rx.changed().await.unwrap();
-
-        let module = self.device.create_shader_module(&*self.rx.borrow());
-
-        self.pipeline = Self::build_pipeline(
-            &self.device,
-            &self.pipeline_layout,
-            &self.render_pass,
-            vec![
-                maligog::ShaderStage::new(&module, maligog::ShaderStageFlags::VERTEX, "main_vs"),
-                maligog::ShaderStage::new(&module, maligog::ShaderStageFlags::FRAGMENT, "main_fs"),
-            ],
-        );
-    }
-
     fn build_pipeline(
         device: &Device,
         pipeline_layout: &maligog::PipelineLayout,
@@ -154,5 +139,83 @@ impl Wireframe {
                 .build(),
         );
         pipeline
+    }
+}
+
+#[async_trait]
+impl super::ScenePass for Wireframe {
+    fn execute(
+        &self,
+        recorder: &mut maligog::CommandRecorder,
+        scene: &maligog_gltf::Scene,
+        image_view: &maligog::ImageView,
+        camera: &super::super::Camera,
+        clear_color: Option<maligog::ClearColorValue>,
+    ) {
+        let transform = Transform {
+            model: glam::Mat4::IDENTITY,
+            view: glam::Mat4::look_at_lh(
+                camera.location,
+                camera.location + camera.front,
+                camera.up,
+            ),
+            projection: glam::Mat4::perspective_lh(camera.fov, camera.aspect_ratio, 0.001, 10000.0),
+        };
+        let framebuffer = self.device.create_framebuffer(
+            self.render_pass.clone(),
+            image_view.width(),
+            image_view.height(),
+            vec![&image_view],
+        );
+        recorder.begin_render_pass(&self.render_pass, &&framebuffer, |rec| {
+            if let Some(color) = clear_color {
+                rec.clear_attachments(
+                    &[vk::ClearAttachment::builder()
+                        .aspect_mask(vk::ImageAspectFlags::COLOR)
+                        .color_attachment(0)
+                        .clear_value(vk::ClearValue { color })
+                        .build()],
+                    &[vk::ClearRect::builder()
+                        .base_array_layer(0)
+                        .layer_count(1)
+                        .rect(
+                            vk::Rect2D::builder()
+                                .offset(vk::Offset2D::default())
+                                .extent(
+                                    vk::Extent2D::builder()
+                                        .width(image_view.width())
+                                        .height(image_view.height())
+                                        .build(),
+                                )
+                                .build(),
+                        )
+                        .build()],
+                );
+            }
+            rec.bind_graphics_pipeline(&self.pipeline, |r| {
+                let nodes = scene.doc().default_scene().unwrap().nodes();
+                for node in nodes {}
+            });
+            rec.push_constants(
+                maligog::ShaderStageFlags::VERTEX,
+                &bytemuck::cast_slice(&[transform]),
+            );
+        });
+    }
+
+    async fn update(&mut self) {
+        self.rx.changed().await.unwrap();
+
+        let module = self.device.create_shader_module(&*self.rx.borrow());
+
+        self.pipeline = Self::build_pipeline(
+            &self.device,
+            &self.pipeline_layout,
+            &self.render_pass,
+            vec![
+                maligog::ShaderStage::new(&module, maligog::ShaderStageFlags::VERTEX, "main_vs"),
+                maligog::ShaderStage::new(&module, maligog::ShaderStageFlags::FRAGMENT, "main_fs"),
+            ],
+        );
     }
 }

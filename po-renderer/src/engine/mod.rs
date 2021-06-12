@@ -6,6 +6,8 @@ pub mod util;
 
 use egui_winit_platform::PlatformDescriptor;
 
+use maligog::vk;
+
 use crate::{vec3, Vec3};
 pub use camera::{Camera, Direction};
 
@@ -169,6 +171,17 @@ impl Engine {
                 self.device.graphics_queue_family_index(),
             );
             cmd_buf.encode(|rec| {
+                if let Some(scene) = &self.scene {
+                    self.scene_pass.execute(
+                        rec,
+                        scene,
+                        &frame.create_view(),
+                        &self.camera,
+                        Some(maligog::ClearColorValue {
+                            float32: [1.0, 1.0, 1.0, 1.0],
+                        }),
+                    );
+                }
                 self.ui_pass.execute(
                     rec,
                     &frame,
@@ -178,9 +191,7 @@ impl Engine {
                         physical_height: self.height,
                         scale_factor: self.scale_factor as f32,
                     },
-                    Some(maligog::ClearColorValue {
-                        float32: [1.0, 1.0, 1.0, 1.0],
-                    }),
+                    None,
                 );
             });
             self.device.graphics_queue().submit_blocking(&[cmd_buf]);
