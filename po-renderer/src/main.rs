@@ -6,8 +6,8 @@ static ALLOC: rpmalloc::RpMalloc = rpmalloc::RpMalloc;
 mod engine;
 mod profiler;
 
-use glam::vec3a as vec3;
-use glam::Vec3A as Vec3;
+use glam::vec3;
+use glam::Vec3;
 
 fn main() {
     let rt = tokio::runtime::Builder::new_multi_thread()
