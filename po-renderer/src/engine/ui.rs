@@ -28,5 +28,24 @@ impl super::Engine {
                 });
             },
         );
+        egui::CentralPanel::default().show(&self.ui_instance.context(), |ui| {
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
+                let response = ui.add(
+                    egui::TextEdit::multiline(&mut self.input.command)
+                        .desired_rows(1)
+                        .code_editor()
+                        .lock_focus(true),
+                );
+                if response.changed() {
+                    if let Some(last) = self.input.command.chars().last() {
+                        if last == '\n' {
+                            response.request_focus();
+                            self.input.command.clear();
+                        }
+                    }
+                }
+            });
+        });
+        // egui::SidePanel::left("left panel", 500.0).show(&self.ui_instance.context(), |ui| {});
     }
 }

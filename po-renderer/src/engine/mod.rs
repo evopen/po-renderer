@@ -9,6 +9,10 @@ pub use camera::{Camera, Direction};
 
 use egui_maligog::egui;
 
+enum RenderMode {
+    Wireframe,
+}
+
 pub struct Engine {
     device: maligog::Device,
     swapchain: maligog::Swapchain,
@@ -17,8 +21,6 @@ pub struct Engine {
     frame_instant: std::time::Instant,
     frame_time: f64,
     camera: Camera,
-    move_speed: f32,
-    in_control: bool,
     ui_pass: egui_maligog::UiPass,
     ui_instance: egui_winit_platform::Platform,
     scale_factor: f64,
@@ -26,6 +28,8 @@ pub struct Engine {
     height: u32,
     paint_jobs: Vec<egui::ClippedMesh>,
     scene: Option<maligog_gltf::Scene>,
+    input: input::Input,
+    render_mode: RenderMode,
 }
 
 impl Engine {
@@ -78,8 +82,6 @@ impl Engine {
             frame_instant,
             frame_time,
             camera,
-            move_speed,
-            in_control,
             ui_pass,
             ui_instance,
             scale_factor,
@@ -87,6 +89,11 @@ impl Engine {
             height,
             paint_jobs: vec![],
             scene: None,
+            input: input::Input {
+                move_speed: 0.8,
+                ..Default::default()
+            },
+            render_mode: RenderMode::Wireframe,
         }
     }
 
@@ -122,9 +129,9 @@ impl Engine {
                     winit::event::WindowEvent::MouseInput { state, button, .. } => {
                         if button.eq(&MouseButton::Right) {
                             if state.eq(&ElementState::Pressed) {
-                                self.in_control = true;
+                                self.input.in_control = true;
                             } else if state.eq(&ElementState::Released) {
-                                self.in_control = false;
+                                self.input.in_control = false;
                             }
                         }
                     }
