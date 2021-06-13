@@ -23,7 +23,7 @@ fn main() {
 }
 
 async fn run() {
-    tracing_subscriber::fmt().with_env_filter("debug").init();
+    tracing_subscriber::fmt().with_env_filter("debug,gpu_allocator=info").init();
     let event_loop = winit::event_loop::EventLoop::new();
     let window = winit::window::WindowBuilder::new()
         .with_inner_size(winit::dpi::PhysicalSize::new(800, 600))

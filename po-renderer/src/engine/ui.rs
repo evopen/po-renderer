@@ -28,24 +28,40 @@ impl super::Engine {
                 });
             },
         );
-        egui::CentralPanel::default().show(&self.ui_instance.context(), |ui| {
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
-                let response = ui.add(
-                    egui::TextEdit::multiline(&mut self.input.command)
-                        .desired_rows(1)
-                        .code_editor()
-                        .lock_focus(true),
-                );
-                if response.changed() {
-                    if let Some(last) = self.input.command.chars().last() {
-                        if last == '\n' {
-                            response.request_focus();
-                            self.input.command.clear();
+        egui::CentralPanel::default()
+            .frame(egui::Frame::default().fill(egui::Color32::from_rgb(0, 0, 0)))
+            .show(&self.ui_instance.context(), |ui| {
+                ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
+                    let response = ui.add(
+                        egui::TextEdit::multiline(&mut self.input.command)
+                            .desired_rows(1)
+                            .code_editor()
+                            .lock_focus(true),
+                    );
+                    if response.changed() {
+                        if let Some(last) = self.input.command.chars().last() {
+                            if last == '\n' {
+                                response.request_focus();
+                                self.input.command.clear();
+                            }
                         }
                     }
-                }
+                });
+                egui::Window::new("Camera").min_width(1600.0).show(
+                    &self.ui_instance.context(),
+                    |ui| {
+                        ui.label(format!("Location: {}", self.camera.location));
+                        ui.label(format!("Front: {}", self.camera.front));
+                        ui.label(format!("Right: {}", self.camera.right));
+                    },
+                );
+                egui::Window::new("Stats").min_width(1600.0).show(
+                    &self.ui_instance.context(),
+                    |ui| {
+                        ui.label(format!("Frame time: {:.2}", self.frame_time * 1000.0));
+                    },
+                );
             });
-        });
         // egui::SidePanel::left("left panel", 500.0).show(&self.ui_instance.context(), |ui| {});
     }
 }

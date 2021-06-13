@@ -36,7 +36,10 @@ impl Engine {
     pub fn new(window: &winit::window::Window) -> Self {
         let entry = maligog::Entry::new().unwrap();
         let required_extensions = maligog::Surface::required_extensions();
-        let instance = entry.create_instance(&[], &&required_extensions);
+        let instance = entry.create_instance(
+            &[maligog::name::instance::Layer::LunargMonitor],
+            &required_extensions,
+        );
         let device = instance
             .enumerate_physical_device()
             .into_iter()
@@ -54,13 +57,13 @@ impl Engine {
         let height = window.inner_size().height;
 
         let camera = Camera::new(
-            vec3(0.0, 0.0, -20.0),
+            vec3(0.0, 0.0, -10.0),
             vec3(0.0, 0.0, 0.0),
             width as f32 / height as f32,
             std::f32::consts::FRAC_PI_3,
         );
 
-        let move_speed = 0.5;
+        let move_speed = 1000.0;
         let in_control = false;
 
         let scale_factor = window.scale_factor();
@@ -145,13 +148,15 @@ impl Engine {
                     winit::event::DeviceEvent::MouseMotion { delta } => {
                         if self.input.in_control {
                             self.camera.process_mouse_movement(
-                                delta.0 as f32 / 100.0,
-                                delta.1 as f32 / 100.0,
+                                delta.0 as f32 / 1000.0,
+                                delta.1 as f32 / 1000.0,
                             );
                         }
                     }
                     winit::event::DeviceEvent::Key(input) => {
-                        self.process_key(input);
+                        if self.input.in_control {
+                            self.process_key(input);
+                        }
                     }
                     _ => {}
                 }

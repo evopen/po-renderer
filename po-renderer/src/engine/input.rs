@@ -9,9 +9,6 @@ pub struct Input {
 
 impl super::Engine {
     pub fn process_key(&mut self, keyboard_input: &winit::event::KeyboardInput) {
-        if !self.input.in_control {
-            return;
-        }
         if let Some(keycode) = keyboard_input.virtual_keycode {
             match keycode {
                 winit::event::VirtualKeyCode::W => {

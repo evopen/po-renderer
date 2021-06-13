@@ -52,12 +52,12 @@ impl Camera {
         self.front.y = self.pitch.sin();
         self.front.z = self.yaw.sin() * self.pitch.cos();
         self.front = self.front.try_normalize().unwrap();
-        self.right = self
-            .front
-            .cross(vec3(0.0, 1.0, 0.0))
+        self.right = vec3(0.0, 1.0, 0.0)
+            .cross(self.front)
             .try_normalize()
             .unwrap();
-        self.up = self.right.cross(self.front).try_normalize().unwrap();
+
+        self.up = self.front.cross(self.right).try_normalize().unwrap();
     }
 
     pub fn process_keyboard(&mut self, direction: Direction, distance: f32) {
