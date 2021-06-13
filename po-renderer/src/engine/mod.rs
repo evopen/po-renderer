@@ -54,7 +54,7 @@ impl Engine {
         let height = window.inner_size().height;
 
         let camera = Camera::new(
-            vec3(0.0, 0.0, -1.0),
+            vec3(0.0, 0.0, -20.0),
             vec3(0.0, 0.0, 0.0),
             width as f32 / height as f32,
             std::f32::consts::FRAC_PI_3,
@@ -92,7 +92,7 @@ impl Engine {
             paint_jobs: vec![],
             scene: None,
             input: input::Input {
-                move_speed: 0.8,
+                move_speed,
                 ..Default::default()
             },
             scene_pass: Box::new(scene_pass),
@@ -143,8 +143,12 @@ impl Engine {
             winit::event::Event::DeviceEvent { device_id, event } => {
                 match event {
                     winit::event::DeviceEvent::MouseMotion { delta } => {
-                        self.camera
-                            .process_mouse_movement(delta.0 as f32, delta.1 as f32);
+                        if self.input.in_control {
+                            self.camera.process_mouse_movement(
+                                delta.0 as f32 / 100.0,
+                                delta.1 as f32 / 100.0,
+                            );
+                        }
                     }
                     winit::event::DeviceEvent::Key(input) => {
                         self.process_key(input);
@@ -181,18 +185,32 @@ impl Engine {
                             float32: [1.0, 1.0, 1.0, 1.0],
                         }),
                     );
+                    self.ui_pass.execute(
+                        rec,
+                        &frame,
+                        &self.paint_jobs,
+                        &egui_maligog::ScreenDescriptor {
+                            physical_width: self.width,
+                            physical_height: self.height,
+                            scale_factor: self.scale_factor as f32,
+                        },
+                        None,
+                    );
+                } else {
+                    self.ui_pass.execute(
+                        rec,
+                        &frame,
+                        &self.paint_jobs,
+                        &egui_maligog::ScreenDescriptor {
+                            physical_width: self.width,
+                            physical_height: self.height,
+                            scale_factor: self.scale_factor as f32,
+                        },
+                        Some(maligog::ClearColorValue {
+                            float32: [1.0, 1.0, 1.0, 1.0],
+                        }),
+                    );
                 }
-                self.ui_pass.execute(
-                    rec,
-                    &frame,
-                    &self.paint_jobs,
-                    &egui_maligog::ScreenDescriptor {
-                        physical_width: self.width,
-                        physical_height: self.height,
-                        scale_factor: self.scale_factor as f32,
-                    },
-                    None,
-                );
             });
             self.device.graphics_queue().submit_blocking(&[cmd_buf]);
             self.swapchain

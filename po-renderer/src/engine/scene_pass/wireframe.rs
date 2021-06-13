@@ -55,7 +55,7 @@ impl Wireframe {
                 .attachments(&[vk::AttachmentDescription::builder()
                     .format(vk::Format::B8G8R8A8_UNORM)
                     .samples(vk::SampleCountFlags::TYPE_1)
-                    .load_op(vk::AttachmentLoadOp::CLEAR)
+                    .load_op(vk::AttachmentLoadOp::LOAD)
                     .store_op(vk::AttachmentStoreOp::STORE)
                     .initial_layout(vk::ImageLayout::ATTACHMENT_OPTIMAL_KHR)
                     .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
@@ -129,6 +129,7 @@ impl Wireframe {
             &vk::PipelineColorBlendStateCreateInfo::builder()
                 .attachments(&[vk::PipelineColorBlendAttachmentState::builder()
                     .blend_enable(false)
+                    .color_write_mask(vk::ColorComponentFlags::all())
                     .build()])
                 .build(),
             &vk::PipelineViewportStateCreateInfo::builder()
@@ -152,7 +153,7 @@ impl super::ScenePass for Wireframe {
         camera: &super::super::Camera,
         clear_color: Option<maligog::ClearColorValue>,
     ) {
-        let transform = Transform {
+        let mut transform = Transform {
             model: glam::Mat4::IDENTITY,
             view: glam::Mat4::look_at_lh(
                 camera.location,
@@ -192,14 +193,45 @@ impl super::ScenePass for Wireframe {
                         .build()],
                 );
             }
-            rec.bind_graphics_pipeline(&self.pipeline, |r| {
-                let nodes = scene.doc().default_scene().unwrap().nodes();
-                for node in nodes {}
+            rec.bind_graphics_pipeline(&self.pipeline, |rec| {
+                let tlas = scene.tlas();
+                for geometry in tlas.geometries() {
+                    for instance in geometry.blas_instances() {
+                        // transform.model.clone_from(instance.transform());
+                        rec.push_constants(
+                            maligog::ShaderStageFlags::VERTEX,
+                            &bytemuck::cast_slice(&[transform]),
+                        );
+                        for geometry in instance.blas().geometries() {
+                            rec.bind_vertex_buffers(
+                                &[&geometry.vertex_buffer_view().buffer_view.buffer],
+                                &[geometry.vertex_buffer_view().buffer_view.offset],
+                            );
+                            rec.bind_index_buffer(
+                                &geometry.index_buffer_view().buffer_view.buffer,
+                                geometry.index_buffer_view().buffer_view.offset,
+                                geometry.index_buffer_view().index_type,
+                            );
+                            rec.set_scissor(&[vk::Rect2D {
+                                offset: vk::Offset2D { x: 0, y: 0 },
+                                extent: vk::Extent2D {
+                                    width: image_view.width(),
+                                    height: image_view.height(),
+                                },
+                            }]);
+                            rec.set_viewport(vk::Viewport {
+                                x: 0.0,
+                                y: image_view.height() as f32,
+                                width: image_view.width() as f32,
+                                height: -(image_view.height() as f32),
+                                min_depth: 0.0001,
+                                max_depth: 1000000.0,
+                            });
+                            rec.draw_indexed(geometry.index_buffer_view().count, 1);
+                        }
+                    }
+                }
             });
-            rec.push_constants(
-                maligog::ShaderStageFlags::VERTEX,
-                &bytemuck::cast_slice(&[transform]),
-            );
         });
     }
 
