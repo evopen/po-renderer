@@ -10,20 +10,13 @@ use glam::vec3;
 use glam::Vec3;
 
 fn main() {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .on_thread_start(|| log::info!("thread started"))
-        .on_thread_stop(|| log::info!("thread stopped"))
-        .thread_keep_alive(std::time::Duration::from_secs(120))
-        .thread_stack_size(32 * 1024)
-        .thread_name("my-pool")
-        .build()
-        .unwrap();
-    rt.block_on(run());
+    run();
 }
 
-async fn run() {
-    tracing_subscriber::fmt().with_env_filter("debug,gpu_allocator=info").init();
+fn run() {
+    tracing_subscriber::fmt()
+        .with_env_filter("debug,gpu_allocator=info")
+        .init();
     let event_loop = winit::event_loop::EventLoop::new();
     let window = winit::window::WindowBuilder::new()
         .with_inner_size(winit::dpi::PhysicalSize::new(800, 600))

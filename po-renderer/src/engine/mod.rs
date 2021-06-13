@@ -103,6 +103,7 @@ impl Engine {
     }
 
     pub fn update(&mut self, event: &winit::event::Event<()>) {
+        self.scene_pass.update();
         self.ui_instance.handle_event(event);
         self.ui_instance
             .update_time(self.start_instant.elapsed().as_secs_f64());

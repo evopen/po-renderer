@@ -2,7 +2,7 @@ use spirv_builder::CompileResult;
 
 pub fn handle_shader_compile(
     compile_result: CompileResult,
-    tx: &tokio::sync::watch::Sender<Vec<u8>>,
+    tx: &crossbeam::channel::Sender<Vec<u8>>,
 ) {
     log::info!("shader incoming");
     let module = std::fs::read(compile_result.module.unwrap_single()).unwrap();

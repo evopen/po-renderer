@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use bytemuck::{Pod, Zeroable};
 use maligog::vk;
 use maligog::Device;
@@ -15,7 +14,7 @@ struct Transform {
 
 pub struct Wireframe {
     pipeline: maligog::GraphicsPipeline,
-    rx: tokio::sync::watch::Receiver<Vec<u8>>,
+    rx: crossbeam::channel::Receiver<Vec<u8>>,
     device: Device,
     pipeline_layout: maligog::PipelineLayout,
     render_pass: maligog::RenderPass,
@@ -33,9 +32,7 @@ impl Wireframe {
                 .stage_flags(maligog::ShaderStageFlags::VERTEX)
                 .build()],
         );
-        let compile_result = util::spirv_builder("./shaders/wireframe").build().unwrap();
-        let spirv = std::fs::read(compile_result.module.unwrap_single()).unwrap();
-        let (tx, rx) = tokio::sync::watch::channel(spirv);
+        let (tx, rx) = crossbeam::channel::bounded(1);
         let watcher = util::spirv_builder("./shaders/wireframe");
         let h = std::thread::spawn(|| {
             log::info!("watching wireframe shader");
@@ -48,7 +45,9 @@ impl Wireframe {
         });
         std::mem::forget(h);
 
-        let module = device.create_shader_module(&*rx.borrow());
+        let spirv = rx.recv().unwrap();
+
+        let module = device.create_shader_module(spirv);
 
         let render_pass = device.create_render_pass(
             &vk::RenderPassCreateInfo::builder()
@@ -143,7 +142,6 @@ impl Wireframe {
     }
 }
 
-#[async_trait]
 impl super::ScenePass for Wireframe {
     fn execute(
         &self,
@@ -235,19 +233,27 @@ impl super::ScenePass for Wireframe {
         });
     }
 
-    async fn update(&mut self) {
-        self.rx.changed().await.unwrap();
+    fn update(&mut self) {
+        if let Ok(spirv) = self.rx.try_recv() {
+            let module = self.device.create_shader_module(spirv);
 
-        let module = self.device.create_shader_module(&*self.rx.borrow());
-
-        self.pipeline = Self::build_pipeline(
-            &self.device,
-            &self.pipeline_layout,
-            &self.render_pass,
-            vec![
-                maligog::ShaderStage::new(&module, maligog::ShaderStageFlags::VERTEX, "main_vs"),
-                maligog::ShaderStage::new(&module, maligog::ShaderStageFlags::FRAGMENT, "main_fs"),
-            ],
-        );
+            self.pipeline = Self::build_pipeline(
+                &self.device,
+                &self.pipeline_layout,
+                &self.render_pass,
+                vec![
+                    maligog::ShaderStage::new(
+                        &module,
+                        maligog::ShaderStageFlags::VERTEX,
+                        "main_vs",
+                    ),
+                    maligog::ShaderStage::new(
+                        &module,
+                        maligog::ShaderStageFlags::FRAGMENT,
+                        "main_fs",
+                    ),
+                ],
+            );
+        }
     }
 }

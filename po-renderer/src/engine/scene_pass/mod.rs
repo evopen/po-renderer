@@ -1,9 +1,7 @@
 mod wireframe;
-use async_trait::async_trait;
 
 pub use wireframe::Wireframe;
 
-#[async_trait]
 pub trait ScenePass {
     fn execute(
         &self,
@@ -14,5 +12,5 @@ pub trait ScenePass {
         clear_color: Option<maligog::ClearColorValue>,
     );
 
-    async fn update(&mut self);
+    fn update(&mut self);
 }

@@ -16,6 +16,7 @@ impl super::Engine {
                         Direction::Forward,
                         self.input.move_speed * self.frame_time as f32,
                     );
+                    println!("moving forward");
                 }
                 winit::event::VirtualKeyCode::S => {
                     self.camera.process_keyboard(
