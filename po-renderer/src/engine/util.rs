@@ -11,6 +11,9 @@ pub fn handle_shader_compile(
 
 pub fn spirv_builder(path_to_crate: &str) -> spirv_builder::SpirvBuilder {
     spirv_builder::SpirvBuilder::new(path_to_crate, "spirv-unknown-vulkan1.2")
+        .capability(spirv_builder::Capability::RayTracingKHR)
+        .capability(spirv_builder::Capability::ImageQuery)
+        .extension("SPV_KHR_ray_tracing")
         .name_variables(true)
         .print_metadata(spirv_builder::MetadataPrintout::None)
 }

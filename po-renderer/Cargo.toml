@@ -22,6 +22,7 @@ rpmalloc = "0.2"
 bytemuck = "1.6"
 rayon = "1.5"
 crossbeam = "0.8"
+dotenv = "0.15"
 
 [dependencies.spirv-builder]
 git = "https://github.com/EmbarkStudios/rust-gpu"

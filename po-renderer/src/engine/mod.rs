@@ -4,6 +4,11 @@ mod scene_pass;
 mod ui;
 pub mod util;
 
+use std::cell::RefCell;
+use std::env;
+use std::rc::Rc;
+use std::str::FromStr;
+
 use egui_winit_platform::PlatformDescriptor;
 
 use maligog::vk;
@@ -29,7 +34,9 @@ pub struct Engine {
     paint_jobs: Vec<egui::ClippedMesh>,
     scene: Option<maligog_gltf::Scene>,
     input: input::Input,
-    scene_pass: Box<dyn scene_pass::ScenePass>,
+    scene_pass: Rc<RefCell<dyn scene_pass::ScenePass>>,
+    wireframe: Rc<RefCell<scene_pass::Wireframe>>,
+    ray_tracing: Rc<RefCell<scene_pass::RayTracing>>,
 }
 
 impl Engine {
@@ -77,7 +84,23 @@ impl Engine {
             style: egui::Style::default(),
         });
 
-        let scene_pass = scene_pass::Wireframe::new(&device);
+        let wireframe = Rc::new(RefCell::new(scene_pass::Wireframe::new(&device)));
+        let ray_tracing = Rc::new(RefCell::new(scene_pass::RayTracing::new(
+            &device, width, height,
+        )));
+        let scene_pass = wireframe.clone();
+
+        let scene = match env::var("DEFAULT_SCENE") {
+            Ok(p) => {
+                let p = std::path::PathBuf::from_str(&p).unwrap();
+                Some(maligog_gltf::Scene::from_file(
+                    Some(p.file_stem().unwrap().to_str().unwrap()),
+                    &device,
+                    &p,
+                ))
+            }
+            Err(_) => None,
+        };
 
         Self {
             device,
@@ -93,17 +116,19 @@ impl Engine {
             width,
             height,
             paint_jobs: vec![],
-            scene: None,
+            scene,
             input: input::Input {
                 move_speed,
                 ..Default::default()
             },
-            scene_pass: Box::new(scene_pass),
+            scene_pass: scene_pass,
+            wireframe,
+            ray_tracing,
         }
     }
 
     pub fn update(&mut self, event: &winit::event::Event<()>) {
-        self.scene_pass.update();
+        self.scene_pass.borrow_mut().update();
         self.ui_instance.handle_event(event);
         self.ui_instance
             .update_time(self.start_instant.elapsed().as_secs_f64());
@@ -182,7 +207,7 @@ impl Engine {
             );
             cmd_buf.encode(|rec| {
                 if let Some(scene) = &self.scene {
-                    self.scene_pass.execute(
+                    self.scene_pass.borrow_mut().execute(
                         rec,
                         scene,
                         &frame.create_view(),

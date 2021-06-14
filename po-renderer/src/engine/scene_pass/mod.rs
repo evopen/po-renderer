@@ -1,5 +1,7 @@
+mod ray_tracing;
 mod wireframe;
 
+pub use ray_tracing::RayTracing;
 pub use wireframe::Wireframe;
 
 pub trait ScenePass {
