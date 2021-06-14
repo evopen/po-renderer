@@ -235,6 +235,7 @@ impl super::ScenePass for Wireframe {
 
     fn update(&mut self) {
         if let Ok(spirv) = self.rx.try_recv() {
+            log::info!("updating shader");
             let module = self.device.create_shader_module(spirv);
 
             self.pipeline = Self::build_pipeline(

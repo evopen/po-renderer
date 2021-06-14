@@ -50,7 +50,7 @@ pub fn main(
     unsafe {
         let tmin = 0.001;
         let tmax = 10000.0;
-        let origin = vec3(-0.001, 0.0, 10.0);
+        let origin = camera_info.origin;
         let resolution = color_image.query_size::<UVec2>();
         let fov_vertical_slope = 1.0 / 5.0;
 

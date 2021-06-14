@@ -211,7 +211,7 @@ impl super::ScenePass for RayTracing {
         recorder.bind_ray_tracing_pipeline(&self.pipeline, |rec| {
             rec.bind_descriptor_sets(vec![&self.as_descriptor_set, &self.image_descriptor_set], 0);
             rec.push_constants(
-                maligog::ShaderStageFlags::VERTEX,
+                maligog::ShaderStageFlags::RAYGEN_KHR,
                 &bytemuck::cast_slice(&[camera_info]),
             );
             rec.trace_ray(
@@ -269,6 +269,7 @@ impl super::ScenePass for RayTracing {
 
     fn update(&mut self) {
         if let Ok(spirv) = self.rx.try_recv() {
+            log::info!("updating shader");
             let module = self.device.create_shader_module(spirv);
 
             self.pipeline = Self::build_pipeline(
@@ -289,6 +290,8 @@ impl super::ScenePass for RayTracing {
                     None,
                 )],
             );
+            self.shader_binding_tables =
+                maligog::PipelineShaderBindingTables::new(&self.device, &self.pipeline);
         }
     }
 }
