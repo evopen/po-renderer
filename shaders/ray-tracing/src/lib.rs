@@ -12,8 +12,15 @@ use spirv_std::Image;
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
 
+pub struct CameraInfo {
+    origin: Vec3,
+    direction: Vec3,
+    vfov: f32,
+}
+
 #[spirv(ray_generation)]
 pub fn main(
+    #[spirv(push_constant)] camera_info: &CameraInfo,
     #[spirv(launch_id)] pixel: UVec3,
     #[spirv(ray_payload)] payload: &mut Vec3,
     #[spirv(descriptor_set = 0, binding = 0)] tlas: &spirv_std::ray_tracing::AccelerationStructure,
@@ -36,6 +43,7 @@ pub fn main(
         let origin = vec3(-0.001, 0.0, 20.0);
         let resolution = img.query_size::<UVec2>();
         let fov_vertical_slope = 1.0 / 5.0;
+
         // normalize width to [-1, 1] and height to [-aspect_ratio, aspect_ratio]
         let screen_uv = vec2(
             2.0 * (pixel.x as f32 + 0.5 - 0.5 * resolution.x as f32) / resolution.y as f32,
