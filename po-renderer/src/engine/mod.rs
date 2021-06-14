@@ -88,7 +88,7 @@ impl Engine {
         let ray_tracing = Rc::new(RefCell::new(scene_pass::RayTracing::new(
             &device, width, height,
         )));
-        let scene_pass = wireframe.clone();
+        let scene_pass = ray_tracing.clone();
 
         let scene = match env::var("DEFAULT_SCENE") {
             Ok(p) => {

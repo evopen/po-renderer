@@ -28,6 +28,14 @@ impl super::Engine {
                 });
             },
         );
+        egui::SidePanel::left("side", 100.0).show(&self.ui_instance.context(), |ui| {
+            if ui.button("Wireframe").clicked() {
+                self.scene_pass = self.wireframe.clone();
+            }
+            if ui.button("Ray Tracing").clicked() {
+                self.scene_pass = self.ray_tracing.clone();
+            }
+        });
         egui::CentralPanel::default()
             .frame(egui::Frame::default().fill(egui::Color32::from_rgb(0, 0, 0)))
             .show(&self.ui_instance.context(), |ui| {

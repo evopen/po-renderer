@@ -25,7 +25,7 @@ pub fn main(
     #[spirv(ray_payload)] payload: &mut Vec3,
     #[spirv(descriptor_set = 0, binding = 0)] tlas: &spirv_std::ray_tracing::AccelerationStructure,
     // #[spirv(descriptor_set = 0, binding = 1)] img: &Image!(2D, type=f32, sampled=false),
-    #[spirv(descriptor_set = 0, binding = 1)] img: &mut image::Image<
+    #[spirv(descriptor_set = 1, binding = 0)] color_image: &mut image::Image<
         f32,
         { image::Dimensionality::TwoD },
         { image::ImageDepth::False },
@@ -35,13 +35,23 @@ pub fn main(
         { image::ImageFormat::Rgba32f },
         { None },
     >,
+    #[spirv(descriptor_set = 1, binding = 1)] ao_image: &mut image::Image<
+        f32,
+        { image::Dimensionality::TwoD },
+        { image::ImageDepth::False },
+        { image::Arrayed::False },
+        { image::Multisampled::False },
+        { image::Sampled::No },
+        { image::ImageFormat::R32f },
+        { None },
+    >,
     // #[spirv(uniform, descriptor_set = 0, binding = 2)] camera_pos: &mut Vec2,
 ) {
     unsafe {
         let tmin = 0.001;
         let tmax = 10000.0;
-        let origin = vec3(-0.001, 0.0, 20.0);
-        let resolution = img.query_size::<UVec2>();
+        let origin = vec3(-0.001, 0.0, 10.0);
+        let resolution = color_image.query_size::<UVec2>();
         let fov_vertical_slope = 1.0 / 5.0;
 
         // normalize width to [-1, 1] and height to [-aspect_ratio, aspect_ratio]
@@ -68,7 +78,7 @@ pub fn main(
             payload,
         );
 
-        img.write(pixel.xy(), vec4(payload.x, payload.y, payload.z, 1.0));
+        color_image.write(pixel.xy(), vec4(payload.x, payload.y, payload.z, 1.0));
     }
 }
 
@@ -79,5 +89,5 @@ pub fn closest_hit(#[spirv(incoming_ray_payload)] payload: &mut Vec3) {
 
 #[spirv(miss)]
 pub fn miss(#[spirv(incoming_ray_payload)] payload: &mut Vec3) {
-    *payload = vec3(1.0, 0.1, 0.23);
+    *payload = vec3(1.0, 0.5, 0.23);
 }
