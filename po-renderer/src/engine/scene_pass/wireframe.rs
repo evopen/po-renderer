@@ -222,8 +222,8 @@ impl super::ScenePass for Wireframe {
                                 y: image_view.height() as f32,
                                 width: image_view.width() as f32,
                                 height: -(image_view.height() as f32),
-                                min_depth: 0.0001,
-                                max_depth: 1000000.0,
+                                min_depth: 0.0,
+                                max_depth: 1.0,
                             });
                             rec.draw_indexed(geometry.index_buffer_view().count, 1);
                         }
