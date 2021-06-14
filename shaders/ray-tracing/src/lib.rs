@@ -5,7 +5,9 @@
     register_attr(spirv)
 )]
 
-use spirv_std::glam::{vec2, vec3, vec4, UVec2, UVec3, Vec3, Vec3Swizzles};
+use spirv_std::glam::{
+    vec2, vec3, vec4, Mat4, UVec2, UVec3, Vec2, Vec3, Vec3Swizzles, Vec4Swizzles,
+};
 use spirv_std::image;
 use spirv_std::Image;
 
@@ -13,15 +15,15 @@ use spirv_std::Image;
 use spirv_std::macros::spirv;
 
 pub struct CameraInfo {
-    origin: Vec3,
-    direction: Vec3,
-    vfov: f32,
+    view_inv: Mat4,
+    projection_inv: Mat4,
 }
 
 #[spirv(ray_generation)]
 pub fn main(
     #[spirv(push_constant)] camera_info: &CameraInfo,
     #[spirv(launch_id)] pixel: UVec3,
+    #[spirv(launch_size)] launch_size: UVec3,
     #[spirv(ray_payload)] payload: &mut Vec3,
     #[spirv(descriptor_set = 0, binding = 0)] tlas: &spirv_std::ray_tracing::AccelerationStructure,
     // #[spirv(descriptor_set = 0, binding = 1)] img: &Image!(2D, type=f32, sampled=false),
@@ -50,30 +52,28 @@ pub fn main(
     unsafe {
         let tmin = 0.001;
         let tmax = 10000.0;
-        let origin = camera_info.origin;
-        let resolution = color_image.query_size::<UVec2>();
-        let fov_vertical_slope = 1.0 / 5.0;
+        let origin = camera_info.view_inv * Vec3::splat(0.0).extend(1.0);
 
-        // normalize width to [-1, 1] and height to [-aspect_ratio, aspect_ratio]
-        let screen_uv = vec2(
-            2.0 * (pixel.x as f32 + 0.5 - 0.5 * resolution.x as f32) / resolution.y as f32,
-            -(2.0 * (pixel.y as f32 + 0.5 - 0.5 * resolution.y as f32) / resolution.y as f32),
-        );
-        let direction = vec3(
-            fov_vertical_slope * screen_uv.x,
-            fov_vertical_slope * screen_uv.y,
-            -1.0,
-        )
-        .normalize();
+        let pixel_center = Vec2::new(pixel.x as f32, pixel.y as f32) + Vec2::splat(0.5);
+
+        // map to (0, 1)
+        let uv = pixel_center / Vec2::new(launch_size.x as f32, launch_size.y as f32);
+
+        // map to (-1, 1) square
+        let d = uv * 2.0 - Vec2::splat(1.0);
+
+        let target = camera_info.projection_inv * d.extend(1.0).extend(1.0);
+        let target_norm = (target.xyz() / target.w).normalize();
+        let direction = (camera_info.view_inv * target_norm.extend(0.0)).normalize();
         tlas.trace_ray(
             spirv_std::ray_tracing::RayFlags::OPAQUE,
             0xFF,
             0,
             0,
             0,
-            origin,
+            origin.xyz(),
             tmin,
-            direction,
+            direction.xyz(),
             tmax,
             payload,
         );

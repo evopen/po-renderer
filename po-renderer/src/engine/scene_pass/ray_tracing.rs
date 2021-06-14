@@ -9,10 +9,9 @@ use crate::engine::util;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Zeroable, Pod)]
-struct CameraInfo {
-    origin: Vec3,
-    direction: Vec3,
-    vfov: f32,
+pub struct CameraInfo {
+    view_inv: glam::Mat4,
+    proj_inv: glam::Mat4,
 }
 
 pub struct RayTracing {
@@ -197,9 +196,14 @@ impl super::ScenePass for RayTracing {
             0 => maligog::DescriptorUpdate::AccelerationStructure(vec![scene.tlas().clone()]),
         });
         let mut camera_info = CameraInfo {
-            origin: camera.location,
-            direction: camera.front,
-            vfov: camera.fov,
+            view_inv: glam::Mat4::look_at_lh(
+                camera.location,
+                camera.location + camera.front,
+                camera.up,
+            )
+            .inverse(),
+            proj_inv: glam::Mat4::perspective_lh(camera.fov, camera.aspect_ratio, 0.001, 10000.0)
+                .inverse(),
         };
 
         recorder.clear_color_image(
