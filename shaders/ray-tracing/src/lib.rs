@@ -5,6 +5,8 @@
     register_attr(spirv)
 )]
 
+use spirv_std::num_traits::float::Float;
+
 use spirv_std::glam;
 use spirv_std::glam::{
     vec2, vec3, vec4, Mat4, UVec2, UVec3, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles,
@@ -91,6 +93,7 @@ pub fn closest_hit(#[spirv(incoming_ray_payload)] payload: &mut Vec3) {
 #[spirv(miss)]
 pub fn miss(
     #[spirv(incoming_ray_payload)] payload: &mut Vec3,
+    #[spirv(world_ray_direction)] world_ray_direction: Vec3,
     #[spirv(descriptor_set = 1, binding = 2)] sampler: &Sampler,
     #[spirv(descriptor_set = 2, binding = 0)] sky_texture: &image::Image<
         f32,
@@ -104,7 +107,15 @@ pub fn miss(
     >,
 ) {
     // *payload = vec3(1.0, 0.5, 0.23);
-    let coord = vec2(0.23, 0.5);
+    let coord = sample_sphereical_map(&&world_ray_direction);
     let color: Vec4 = sky_texture.sample_by_lod(*sampler, coord, 0.0);
     *payload = color.xyz();
+}
+
+pub fn sample_sphereical_map(direction: &Vec3) -> Vec2 {
+    let invAtan = vec2(0.1591, 0.3183);
+    let mut uv = vec2(direction.z.atan2(direction.x), direction.y.asin());
+    uv *= invAtan;
+    uv += Vec2::splat(0.5);
+    return uv;
 }
