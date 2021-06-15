@@ -150,6 +150,7 @@ impl super::ScenePass for Wireframe {
         image_view: &maligog::ImageView,
         camera: &super::super::Camera,
         clear_color: Option<maligog::ClearColorValue>,
+        skymap: &maligog::ImageView,
     ) {
         let mut transform = Transform {
             model: glam::Mat4::IDENTITY,

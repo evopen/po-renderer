@@ -37,6 +37,8 @@ pub struct Engine {
     scene_pass: Rc<RefCell<dyn scene_pass::ScenePass>>,
     wireframe: Rc<RefCell<scene_pass::Wireframe>>,
     ray_tracing: Rc<RefCell<scene_pass::RayTracing>>,
+    skymap: Option<maligog::Image>,
+    skymap_view: Option<maligog::ImageView>,
 }
 
 impl Engine {
@@ -101,6 +103,27 @@ impl Engine {
             }
             Err(_) => None,
         };
+        let skymap = match env::var("DEFAULT_SKYMAP") {
+            Ok(p) => {
+                let p = std::path::PathBuf::from_str(&p).unwrap();
+                let img = image::open(&p).unwrap();
+                let img = img.into_rgba8();
+                Some(device.create_image_init(
+                    Some("skymap"),
+                    maligog::Format::R8G8B8A8_UNORM,
+                    img.width(),
+                    img.height(),
+                    maligog::ImageUsageFlags::SAMPLED,
+                    maligog::MemoryLocation::GpuOnly,
+                    &img.as_raw(),
+                ))
+            }
+            Err(_) => None,
+        };
+        let skymap_view = match &skymap {
+            Some(s) => Some(s.create_view()),
+            None => None,
+        };
 
         Self {
             device,
@@ -124,6 +147,8 @@ impl Engine {
             scene_pass: scene_pass,
             wireframe,
             ray_tracing,
+            skymap,
+            skymap_view,
         }
     }
 
@@ -215,6 +240,7 @@ impl Engine {
                         Some(maligog::ClearColorValue {
                             float32: [1.0, 1.0, 1.0, 1.0],
                         }),
+                        self.skymap_view.as_ref().unwrap(),
                     );
                     self.ui_pass.execute(
                         rec,

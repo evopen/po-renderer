@@ -25,11 +25,23 @@ pub struct RayTracing {
     as_descriptor_set_layout: maligog::DescriptorSetLayout,
     image_descriptor_set: maligog::DescriptorSet,
     as_descriptor_set: maligog::DescriptorSet,
+    skymap_descriptor_set_layout: maligog::DescriptorSetLayout,
+    skymap_descriptor_set: maligog::DescriptorSet,
     shader_binding_tables: maligog::PipelineShaderBindingTables,
 }
 
 impl RayTracing {
     pub fn new(device: &Device, width: u32, height: u32) -> Self {
+        let sky_sampler = device.create_sampler(
+            Some("sky"),
+            maligog::Filter::LINEAR,
+            maligog::Filter::LINEAR,
+            maligog::SamplerAddressMode::CLAMP_TO_EDGE,
+            maligog::SamplerAddressMode::CLAMP_TO_EDGE,
+        );
+        log::debug!("creating image descriptor set layout");
+
+        // descriptor set 1
         let image_descriptor_set_layout = device.create_descriptor_set_layout(
             Some("ray tracing image"),
             &[
@@ -45,8 +57,17 @@ impl RayTracing {
                     stage_flags: maligog::ShaderStageFlags::RAYGEN_KHR,
                     descriptor_count: 1,
                 },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 2,
+                    descriptor_type: maligog::DescriptorType::Sampler(Some(sky_sampler)),
+                    stage_flags: maligog::ShaderStageFlags::MISS_KHR,
+                    descriptor_count: 1,
+                },
             ],
         );
+        log::debug!("creating as descriptor set layout");
+
+        // descriptor set 0
         let as_descriptor_set_layout = device.create_descriptor_set_layout(
             Some("ray tracing as"),
             &[maligog::DescriptorSetLayoutBinding {
@@ -56,9 +77,23 @@ impl RayTracing {
                 descriptor_count: 1,
             }],
         );
+        log::debug!("creating skymap descriptor set layout");
+        let skymap_descriptor_set_layout = device.create_descriptor_set_layout(
+            Some("ray tracing skymap"),
+            &[maligog::DescriptorSetLayoutBinding {
+                binding: 0,
+                descriptor_type: maligog::DescriptorType::SampledImage,
+                stage_flags: maligog::ShaderStageFlags::MISS_KHR,
+                descriptor_count: 1,
+            }],
+        );
         let pipeline_layout = device.create_pipeline_layout(
             Some("ray tracing"),
-            &[&as_descriptor_set_layout, &image_descriptor_set_layout],
+            &[
+                &as_descriptor_set_layout,
+                &image_descriptor_set_layout,
+                &skymap_descriptor_set_layout,
+            ],
             &[maligog::PushConstantRange::builder()
                 .offset(0)
                 .size(std::mem::size_of::<CameraInfo>() as u32)
@@ -80,8 +115,10 @@ impl RayTracing {
 
         let spirv = rx.recv().unwrap();
 
+        log::debug!("creating shader module");
         let module = device.create_shader_module(spirv);
 
+        log::debug!("creating pipeline");
         let pipeline = Self::build_pipeline(
             device,
             &pipeline_layout,
@@ -106,7 +143,9 @@ impl RayTracing {
             maligog::Format::R32G32B32A32_SFLOAT,
             width,
             height,
-            maligog::ImageUsageFlags::STORAGE | maligog::ImageUsageFlags::TRANSFER_DST,
+            maligog::ImageUsageFlags::STORAGE
+                | maligog::ImageUsageFlags::TRANSFER_DST
+                | maligog::ImageUsageFlags::TRANSFER_SRC,
             maligog::MemoryLocation::GpuOnly,
         );
         let ao_image = device.create_image(
@@ -125,13 +164,22 @@ impl RayTracing {
                     .descriptor_count(2)
                     .build(),
                 maligog::DescriptorPoolSize::builder()
+                    .ty(vk::DescriptorType::SAMPLED_IMAGE)
+                    .descriptor_count(2)
+                    .build(),
+                maligog::DescriptorPoolSize::builder()
+                    .ty(vk::DescriptorType::SAMPLER)
+                    .descriptor_count(2)
+                    .build(),
+                maligog::DescriptorPoolSize::builder()
                     .ty(vk::DescriptorType::ACCELERATION_STRUCTURE_KHR)
                     .descriptor_count(1)
                     .build(),
             ],
-            2,
+            10,
         );
 
+        log::debug!("creating image descriptor set");
         let image_descriptor_set = device.create_descriptor_set(
             Some("image descriptor set"),
             &descriptor_pool,
@@ -141,12 +189,21 @@ impl RayTracing {
                 1 => maligog::DescriptorUpdate::Image(vec![ao_image.create_view()]),
             },
         );
+
+        log::debug!("allocating as descriptor set");
         let as_descriptor_set = device.allocate_descriptor_set(
-            Some("temp descriptor set"),
+            Some("as descriptor set"),
             &descriptor_pool,
             &as_descriptor_set_layout,
         );
+        log::debug!("allocating skymap descriptor set");
+        let skymap_descriptor_set = device.allocate_descriptor_set(
+            Some("skymap descriptor set"),
+            &descriptor_pool,
+            &skymap_descriptor_set_layout,
+        );
 
+        log::debug!("creating shader binding tables");
         let shader_binding_tables = maligog::PipelineShaderBindingTables::new(&device, &pipeline);
 
         Self {
@@ -161,6 +218,8 @@ impl RayTracing {
             image_descriptor_set,
             shader_binding_tables,
             as_descriptor_set,
+            skymap_descriptor_set_layout,
+            skymap_descriptor_set,
         }
     }
 
@@ -191,9 +250,13 @@ impl super::ScenePass for RayTracing {
         image_view: &maligog::ImageView,
         camera: &super::super::Camera,
         clear_color: Option<maligog::ClearColorValue>,
+        skymap: &maligog::ImageView,
     ) {
         self.as_descriptor_set.update(btreemap! {
             0 => maligog::DescriptorUpdate::AccelerationStructure(vec![scene.tlas().clone()]),
+        });
+        self.skymap_descriptor_set.update(btreemap! {
+            0 => maligog::DescriptorUpdate::Image(vec![skymap.clone()]),
         });
         let mut camera_info = CameraInfo {
             view_inv: glam::Mat4::look_at_lh(
@@ -213,7 +276,14 @@ impl super::ScenePass for RayTracing {
             },
         );
         recorder.bind_ray_tracing_pipeline(&self.pipeline, |rec| {
-            rec.bind_descriptor_sets(vec![&self.as_descriptor_set, &self.image_descriptor_set], 0);
+            rec.bind_descriptor_sets(
+                vec![
+                    &self.as_descriptor_set,
+                    &self.image_descriptor_set,
+                    &self.skymap_descriptor_set,
+                ],
+                0,
+            );
             rec.push_constants(
                 maligog::ShaderStageFlags::RAYGEN_KHR,
                 &bytemuck::cast_slice(&[camera_info]),

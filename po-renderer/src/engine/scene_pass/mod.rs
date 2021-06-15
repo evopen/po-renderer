@@ -12,6 +12,7 @@ pub trait ScenePass {
         image_view: &maligog::ImageView,
         camera: &super::Camera,
         clear_color: Option<maligog::ClearColorValue>,
+        skymap: &maligog::ImageView,
     );
 
     fn update(&mut self);

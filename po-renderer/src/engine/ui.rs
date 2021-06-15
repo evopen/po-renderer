@@ -1,4 +1,5 @@
 use egui_maligog::egui;
+use image::GenericImageView;
 
 impl super::Engine {
     pub fn draw_ui(&mut self) {
@@ -16,6 +17,27 @@ impl super::Engine {
                                         &self.device,
                                         &p,
                                     ));
+                                }
+                                nfd2::Response::OkayMultiple(p) => todo!(),
+                                nfd2::Response::Cancel => {}
+                            }
+                        }
+                        if ui.button("Import Skymap").clicked() {
+                            match nfd2::open_file_dialog(Some("jpg,jpeg"), None).unwrap() {
+                                nfd2::Response::Okay(p) => {
+                                    let img = image::open(&p).unwrap();
+                                    let img = img.into_rgba8();
+                                    self.skymap = Some(self.device.create_image_init(
+                                        Some("skymap"),
+                                        maligog::Format::R8G8B8A8_UNORM,
+                                        img.width(),
+                                        img.height(),
+                                        maligog::ImageUsageFlags::SAMPLED,
+                                        maligog::MemoryLocation::GpuOnly,
+                                        &img.as_raw(),
+                                    ));
+                                    self.skymap_view =
+                                        Some(self.skymap.as_ref().unwrap().create_view());
                                 }
                                 nfd2::Response::OkayMultiple(p) => todo!(),
                                 nfd2::Response::Cancel => {}

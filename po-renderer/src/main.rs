@@ -6,6 +6,7 @@ static ALLOC: rpmalloc::RpMalloc = rpmalloc::RpMalloc;
 mod engine;
 mod profiler;
 
+use backtrace::Backtrace;
 use glam::vec3;
 use glam::Vec3;
 

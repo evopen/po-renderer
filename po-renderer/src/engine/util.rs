@@ -14,6 +14,6 @@ pub fn spirv_builder(path_to_crate: &str) -> spirv_builder::SpirvBuilder {
         .capability(spirv_builder::Capability::RayTracingKHR)
         .capability(spirv_builder::Capability::ImageQuery)
         .extension("SPV_KHR_ray_tracing")
-        .name_variables(true)
+        .name_variables(false)
         .print_metadata(spirv_builder::MetadataPrintout::None)
 }
