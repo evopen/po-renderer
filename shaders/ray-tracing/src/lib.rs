@@ -86,41 +86,19 @@ pub fn main(
 }
 
 #[spirv(closest_hit)]
-pub fn closest_hit(#[spirv(incoming_ray_payload)] payload: &mut Vec3) {
-    *payload = vec3(0.0, 0.0, 1.0);
-}
-
-#[spirv(closest_hit)]
-pub fn hit0(
+pub fn closest_hit(
     #[spirv(incoming_ray_payload)] payload: &mut Vec3,
-    #[spirv(hit_attribute)] hit_attr: &mut Vec3,
+    #[spirv(hit_attribute)] hit_attr: &mut Vec2,
     #[spirv(primitive_id)] primitive_id: i32,
+    #[spirv(instance_id)] instance_id: i32,
+    #[spirv(ray_geometry_index)] geometry_index: i32,
+    #[spirv(instance_custom_index)] instance_custom_index: i32,
 ) {
-    *payload = vec3(0.0, 1.0, 0.0);
-}
-#[spirv(closest_hit)]
-pub fn hit1(
-    #[spirv(incoming_ray_payload)] payload: &mut Vec3,
-    #[spirv(hit_attribute)] hit_attr: &mut Vec3,
-    #[spirv(primitive_id)] primitive_id: i32,
-) {
-    *payload = vec3(1.0, 0.0, 0.0);
-}
-#[spirv(closest_hit)]
-pub fn hit2(
-    #[spirv(incoming_ray_payload)] payload: &mut Vec3,
-    #[spirv(hit_attribute)] hit_attr: &mut Vec3,
-    #[spirv(primitive_id)] primitive_id: i32,
-) {
-    *payload = vec3(1.0, 1.0, 0.0);
-}
-#[spirv(closest_hit)]
-pub fn hit3(
-    #[spirv(incoming_ray_payload)] payload: &mut Vec3,
-    #[spirv(hit_attribute)] hit_attr: &mut Vec3,
-    #[spirv(primitive_id)] primitive_id: i32,
-) {
-    *payload = vec3(0.0, 1.0, 1.0);
+    let r = ((instance_id + 1) % 6) as f32 / 6.0;
+    let g = ((instance_id + 2) % 6) as f32 / 6.0;
+    let b = (instance_id % 6) as f32 / 6.0;
+    let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
+    *payload = barycentrics;
 }
 
 #[spirv(miss)]

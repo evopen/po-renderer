@@ -128,48 +128,14 @@ impl RayTracing {
                 maligog::ShaderStageFlags::MISS_KHR,
                 "miss",
             )],
-            &[
-                &maligog::TrianglesHitGroup::new(
-                    &maligog::ShaderStage::new(
-                        &module,
-                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                        "closest_hit",
-                    ),
-                    None,
+            &[&maligog::TrianglesHitGroup::new(
+                &maligog::ShaderStage::new(
+                    &module,
+                    maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                    "closest_hit",
                 ),
-                &maligog::TrianglesHitGroup::new(
-                    &maligog::ShaderStage::new(
-                        &module,
-                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                        "hit0",
-                    ),
-                    None,
-                ),
-                &maligog::TrianglesHitGroup::new(
-                    &maligog::ShaderStage::new(
-                        &module,
-                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                        "hit1",
-                    ),
-                    None,
-                ),
-                &maligog::TrianglesHitGroup::new(
-                    &maligog::ShaderStage::new(
-                        &module,
-                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                        "hit2",
-                    ),
-                    None,
-                ),
-                &maligog::TrianglesHitGroup::new(
-                    &maligog::ShaderStage::new(
-                        &module,
-                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                        "hit3",
-                    ),
-                    None,
-                ),
-            ],
+                None,
+            )],
         );
 
         let color_image = device.create_image(
@@ -291,7 +257,7 @@ impl super::ScenePass for RayTracing {
 
         let mut hit_groups: Vec<u32> = Vec::new();
         for i in 0..12345 {
-            hit_groups.push(i % 5);
+            hit_groups.push(0);
         }
         let shader_binding_tables = self.pipeline.create_shader_binding_tables(&hit_groups);
 
@@ -392,48 +358,14 @@ impl super::ScenePass for RayTracing {
                     maligog::ShaderStageFlags::MISS_KHR,
                     "miss",
                 )],
-                &[
-                    &maligog::TrianglesHitGroup::new(
-                        &maligog::ShaderStage::new(
-                            &module,
-                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                            "closest_hit",
-                        ),
-                        None,
+                &[&maligog::TrianglesHitGroup::new(
+                    &maligog::ShaderStage::new(
+                        &module,
+                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                        "closest_hit",
                     ),
-                    &maligog::TrianglesHitGroup::new(
-                        &maligog::ShaderStage::new(
-                            &module,
-                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                            "hit0",
-                        ),
-                        None,
-                    ),
-                    &maligog::TrianglesHitGroup::new(
-                        &maligog::ShaderStage::new(
-                            &module,
-                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                            "hit1",
-                        ),
-                        None,
-                    ),
-                    &maligog::TrianglesHitGroup::new(
-                        &maligog::ShaderStage::new(
-                            &module,
-                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                            "hit2",
-                        ),
-                        None,
-                    ),
-                    &maligog::TrianglesHitGroup::new(
-                        &maligog::ShaderStage::new(
-                            &module,
-                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                            "hit3",
-                        ),
-                        None,
-                    ),
-                ],
+                    None,
+                )],
             );
         }
     }
