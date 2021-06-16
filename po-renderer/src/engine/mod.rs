@@ -105,6 +105,7 @@ impl Engine {
         };
         let skymap = match env::var("DEFAULT_SKYMAP") {
             Ok(p) => {
+                log::info!("loading skymap");
                 let p = std::path::PathBuf::from_str(&p).unwrap();
                 let img = image::open(&p).unwrap();
                 let img = img.into_rgba8();
