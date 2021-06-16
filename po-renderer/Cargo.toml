@@ -26,6 +26,7 @@ dotenv = "0.15"
 maplit = "1.0"
 image = "0.23"
 backtrace = "0.3"
+rand = { version = "0.8", features = ["small_rng"] }
 
 
 [dependencies.spirv-builder]

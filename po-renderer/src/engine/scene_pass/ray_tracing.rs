@@ -1,6 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use maligog::vk;
 use maligog::Device;
+use maligog::ShaderBindingTables;
 use maplit::btreemap;
 
 use crate::Vec3;
@@ -128,15 +129,55 @@ impl RayTracing {
                 maligog::ShaderStageFlags::MISS_KHR,
                 "miss",
             )],
-            &[&maligog::TrianglesHitGroup::new(
-                &maligog::ShaderStage::new(
-                    &module,
-                    maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                    "closest_hit",
+            &[
+                &maligog::TrianglesHitGroup::new(
+                    &maligog::ShaderStage::new(
+                        &module,
+                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                        "closest_hit",
+                    ),
+                    None,
                 ),
-                None,
-            )],
+                &maligog::TrianglesHitGroup::new(
+                    &maligog::ShaderStage::new(
+                        &module,
+                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                        "hit0",
+                    ),
+                    None,
+                ),
+                &maligog::TrianglesHitGroup::new(
+                    &maligog::ShaderStage::new(
+                        &module,
+                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                        "hit1",
+                    ),
+                    None,
+                ),
+                &maligog::TrianglesHitGroup::new(
+                    &maligog::ShaderStage::new(
+                        &module,
+                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                        "hit2",
+                    ),
+                    None,
+                ),
+                &maligog::TrianglesHitGroup::new(
+                    &maligog::ShaderStage::new(
+                        &module,
+                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                        "hit3",
+                    ),
+                    None,
+                ),
+            ],
         );
+        let mut hit_groups: Vec<u32> = Vec::new();
+        for i in 0..1 {
+            hit_groups.push(i % 5);
+        }
+        let shader_binding_tables =
+            maligog::PipelineShaderBindingTables::new(&device, &pipeline, &hit_groups);
 
         let color_image = device.create_image(
             Some("color image"),
@@ -203,9 +244,6 @@ impl RayTracing {
             &skymap_descriptor_set_layout,
         );
 
-        log::debug!("creating shader binding tables");
-        let shader_binding_tables = maligog::PipelineShaderBindingTables::new(&device, &pipeline);
-
         Self {
             pipeline,
             rx,
@@ -216,10 +254,10 @@ impl RayTracing {
             descriptor_pool,
             as_descriptor_set_layout,
             image_descriptor_set,
-            shader_binding_tables,
             as_descriptor_set,
             skymap_descriptor_set_layout,
             skymap_descriptor_set,
+            shader_binding_tables,
         }
     }
 
@@ -258,6 +296,7 @@ impl super::ScenePass for RayTracing {
         self.skymap_descriptor_set.update(btreemap! {
             0 => maligog::DescriptorUpdate::Image(vec![skymap.clone()]),
         });
+
         let mut camera_info = CameraInfo {
             view_inv: glam::Mat4::look_at_lh(
                 camera.location,
@@ -289,10 +328,10 @@ impl super::ScenePass for RayTracing {
                 &bytemuck::cast_slice(&[camera_info]),
             );
             rec.trace_ray(
-                &self.shader_binding_tables.get_raygen_table(),
-                &self.shader_binding_tables.get_miss_table(),
-                &self.shader_binding_tables.get_hit_table(),
-                &self.shader_binding_tables.get_callable_table(),
+                &self.shader_binding_tables.ray_gen_table(),
+                &self.shader_binding_tables.miss_table(),
+                &self.shader_binding_tables.hit_table(),
+                &self.shader_binding_tables.callable_table(),
                 self.color_image.width(),
                 self.color_image.height(),
                 31,
@@ -355,17 +394,49 @@ impl super::ScenePass for RayTracing {
                     maligog::ShaderStageFlags::MISS_KHR,
                     "miss",
                 )],
-                &[&maligog::TrianglesHitGroup::new(
-                    &maligog::ShaderStage::new(
-                        &module,
-                        maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
-                        "closest_hit",
+                &[
+                    &maligog::TrianglesHitGroup::new(
+                        &maligog::ShaderStage::new(
+                            &module,
+                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                            "closest_hit",
+                        ),
+                        None,
                     ),
-                    None,
-                )],
+                    &maligog::TrianglesHitGroup::new(
+                        &maligog::ShaderStage::new(
+                            &module,
+                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                            "hit0",
+                        ),
+                        None,
+                    ),
+                    &maligog::TrianglesHitGroup::new(
+                        &maligog::ShaderStage::new(
+                            &module,
+                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                            "hit1",
+                        ),
+                        None,
+                    ),
+                    &maligog::TrianglesHitGroup::new(
+                        &maligog::ShaderStage::new(
+                            &module,
+                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                            "hit2",
+                        ),
+                        None,
+                    ),
+                    &maligog::TrianglesHitGroup::new(
+                        &maligog::ShaderStage::new(
+                            &module,
+                            maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                            "hit3",
+                        ),
+                        None,
+                    ),
+                ],
             );
-            self.shader_binding_tables =
-                maligog::PipelineShaderBindingTables::new(&self.device, &self.pipeline);
         }
     }
 }

@@ -87,6 +87,39 @@ pub fn main(
 
 #[spirv(closest_hit)]
 pub fn closest_hit(#[spirv(incoming_ray_payload)] payload: &mut Vec3) {
+    *payload = vec3(0.0, 0.0, 1.0);
+}
+
+#[spirv(closest_hit)]
+pub fn hit0(
+    #[spirv(incoming_ray_payload)] payload: &mut Vec3,
+    #[spirv(hit_attribute)] hit_attr: &mut Vec3,
+    #[spirv(primitive_id)] primitive_id: i32,
+) {
+    *payload = vec3(0.0, 1.0, 0.0);
+}
+#[spirv(closest_hit)]
+pub fn hit1(
+    #[spirv(incoming_ray_payload)] payload: &mut Vec3,
+    #[spirv(hit_attribute)] hit_attr: &mut Vec3,
+    #[spirv(primitive_id)] primitive_id: i32,
+) {
+    *payload = vec3(1.0, 0.0, 0.0);
+}
+#[spirv(closest_hit)]
+pub fn hit2(
+    #[spirv(incoming_ray_payload)] payload: &mut Vec3,
+    #[spirv(hit_attribute)] hit_attr: &mut Vec3,
+    #[spirv(primitive_id)] primitive_id: i32,
+) {
+    *payload = vec3(1.0, 1.0, 0.0);
+}
+#[spirv(closest_hit)]
+pub fn hit3(
+    #[spirv(incoming_ray_payload)] payload: &mut Vec3,
+    #[spirv(hit_attribute)] hit_attr: &mut Vec3,
+    #[spirv(primitive_id)] primitive_id: i32,
+) {
     *payload = vec3(0.0, 1.0, 1.0);
 }
 
@@ -113,9 +146,9 @@ pub fn miss(
 }
 
 pub fn sample_sphereical_map(direction: &Vec3) -> Vec2 {
-    let invAtan = vec2(0.1591, 0.3183);
+    let inv_atan = vec2(0.1591, 0.3183);
     let mut uv = vec2(direction.z.atan2(direction.x), direction.y.asin());
-    uv *= invAtan;
+    uv *= inv_atan;
     uv += Vec2::splat(0.5);
     return uv;
 }
