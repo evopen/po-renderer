@@ -99,7 +99,8 @@ pub fn closest_hit(
     #[spirv(primitive_id)] primitive_id: i32, // index of triangle in geometry
     #[spirv(instance_custom_index)] instance_custom_index: i32,
     #[spirv(shader_record_buffer)] shader_record_buffer: &mut ShaderRecordData,
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] slice: &mut [f32],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] mesh_buf: &mut [f32],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] scene_info: &mut [f32],
 ) {
     let r = ((instance_id + 1) % 6) as f32 / 6.0;
     let g = ((instance_id + 2) % 6) as f32 / 6.0;

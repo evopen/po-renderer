@@ -50,18 +50,21 @@ impl RayTracing {
                     descriptor_type: maligog::DescriptorType::StorageImage,
                     stage_flags: maligog::ShaderStageFlags::RAYGEN_KHR,
                     descriptor_count: 1,
+                    variable_count: false,
                 },
                 maligog::DescriptorSetLayoutBinding {
                     binding: 1,
                     descriptor_type: maligog::DescriptorType::StorageImage,
                     stage_flags: maligog::ShaderStageFlags::RAYGEN_KHR,
                     descriptor_count: 1,
+                    variable_count: false,
                 },
                 maligog::DescriptorSetLayoutBinding {
                     binding: 2,
                     descriptor_type: maligog::DescriptorType::Sampler(Some(sky_sampler)),
                     stage_flags: maligog::ShaderStageFlags::MISS_KHR,
                     descriptor_count: 1,
+                    variable_count: false,
                 },
             ],
         );
@@ -75,6 +78,7 @@ impl RayTracing {
                 descriptor_type: maligog::DescriptorType::AccelerationStructure,
                 stage_flags: maligog::ShaderStageFlags::RAYGEN_KHR,
                 descriptor_count: 1,
+                variable_count: false,
             }],
         );
         log::debug!("creating skymap descriptor set layout");
@@ -85,6 +89,7 @@ impl RayTracing {
                 descriptor_type: maligog::DescriptorType::SampledImage,
                 stage_flags: maligog::ShaderStageFlags::MISS_KHR,
                 descriptor_count: 1,
+                variable_count: false,
             }],
         );
         let pipeline_layout = device.create_pipeline_layout(
