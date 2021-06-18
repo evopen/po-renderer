@@ -27,7 +27,7 @@ impl super::Engine {
                                 nfd2::Response::Okay(p) => {
                                     let img = image::open(&p).unwrap();
                                     let img = img.into_rgba8();
-                                    self.skymap = Some(self.device.create_image_init(
+                                    self.skymap = self.device.create_image_init(
                                         Some("skymap"),
                                         maligog::Format::R8G8B8A8_UNORM,
                                         img.width(),
@@ -35,9 +35,8 @@ impl super::Engine {
                                         maligog::ImageUsageFlags::SAMPLED,
                                         maligog::MemoryLocation::GpuOnly,
                                         &img.as_raw(),
-                                    ));
-                                    self.skymap_view =
-                                        Some(self.skymap.as_ref().unwrap().create_view());
+                                    );
+                                    self.skymap_view = self.skymap.create_view();
                                 }
                                 nfd2::Response::OkayMultiple(p) => todo!(),
                                 nfd2::Response::Cancel => {}

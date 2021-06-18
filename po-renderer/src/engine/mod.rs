@@ -37,8 +37,8 @@ pub struct Engine {
     scene_pass: Rc<RefCell<dyn scene_pass::ScenePass>>,
     wireframe: Rc<RefCell<scene_pass::Wireframe>>,
     ray_tracing: Rc<RefCell<scene_pass::RayTracing>>,
-    skymap: Option<maligog::Image>,
-    skymap_view: Option<maligog::ImageView>,
+    skymap: maligog::Image,
+    skymap_view: maligog::ImageView,
 }
 
 impl Engine {
@@ -109,7 +109,7 @@ impl Engine {
                 let p = std::path::PathBuf::from_str(&p).unwrap();
                 let img = image::open(&p).unwrap();
                 let img = img.into_rgba8();
-                Some(device.create_image_init(
+                device.create_image_init(
                     Some("skymap"),
                     maligog::Format::R8G8B8A8_UNORM,
                     img.width(),
@@ -117,14 +117,21 @@ impl Engine {
                     maligog::ImageUsageFlags::SAMPLED,
                     maligog::MemoryLocation::GpuOnly,
                     &img.as_raw(),
-                ))
+                )
             }
-            Err(_) => None,
+            Err(_) => {
+                device.create_image_init(
+                    Some("skymap"),
+                    maligog::Format::R8G8B8A8_UNORM,
+                    1,
+                    1,
+                    maligog::ImageUsageFlags::SAMPLED,
+                    maligog::MemoryLocation::GpuOnly,
+                    &[255, 255, 255, 255],
+                )
+            }
         };
-        let skymap_view = match &skymap {
-            Some(s) => Some(s.create_view()),
-            None => None,
-        };
+        let skymap_view = skymap.create_view();
 
         Self {
             device,
@@ -241,7 +248,7 @@ impl Engine {
                         Some(maligog::ClearColorValue {
                             float32: [1.0, 1.0, 1.0, 1.0],
                         }),
-                        self.skymap_view.as_ref().unwrap(),
+                        &self.skymap_view,
                     );
                     self.ui_pass.execute(
                         rec,
