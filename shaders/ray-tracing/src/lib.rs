@@ -4,6 +4,7 @@
     feature(register_attr),
     register_attr(spirv)
 )]
+#![cfg_attr(debug_assertions, allow(dead_code, unused_imports, unused))]
 
 use spirv_std::num_traits::float::Float;
 
