@@ -28,10 +28,12 @@ pub struct RayTracing {
     as_descriptor_set: maligog::DescriptorSet,
     skymap_descriptor_set_layout: maligog::DescriptorSetLayout,
     skymap_descriptor_set: maligog::DescriptorSet,
+    descriptor_helper: crate::engine::DescriptorHelper,
 }
 
 impl RayTracing {
     pub fn new(device: &Device, width: u32, height: u32) -> Self {
+        let descriptor_helper = crate::engine::DescriptorHelper::new(device);
         let sky_sampler = device.create_sampler(
             Some("sky"),
             maligog::Filter::LINEAR,
@@ -221,6 +223,7 @@ impl RayTracing {
             as_descriptor_set,
             skymap_descriptor_set_layout,
             skymap_descriptor_set,
+            descriptor_helper,
         }
     }
 

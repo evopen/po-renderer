@@ -1,8 +1,11 @@
 mod camera;
+mod descriptor;
 mod input;
 mod scene_pass;
 mod ui;
 pub mod util;
+
+pub use descriptor::DescriptorHelper;
 
 use std::cell::RefCell;
 use std::env;
