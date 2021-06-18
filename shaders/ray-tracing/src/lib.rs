@@ -7,6 +7,7 @@
 #![cfg_attr(debug_assertions, allow(dead_code, unused_imports, unused))]
 
 use spirv_std::num_traits::float::Float;
+use spirv_std::RuntimeArray;
 
 use spirv_std::glam;
 use spirv_std::glam::{
@@ -91,23 +92,49 @@ pub struct ShaderRecordData {
     vertex_offset: u32,
 }
 
+struct PrimitiveInfo {
+    index_offset: u64,
+    vertex_offset: u64,
+    index_count: u32,
+    vertex_count: u32,
+}
+
+pub struct MeshInfo {
+    primitive_infos: RuntimeArray<PrimitiveInfo>,
+}
+
+pub struct Info {
+    mesh_infos: RuntimeArray<MeshInfo>,
+}
+
 #[spirv(closest_hit)]
 pub fn closest_hit(
     #[spirv(incoming_ray_payload)] payload: &mut Vec3,
     #[spirv(hit_attribute)] hit_attr: &mut Vec2,
     #[spirv(instance_id)] instance_id: i32, // index of instance in tlas
-    #[spirv(ray_geometry_index)] geometry_index: i32, // index of geometry in instance
+    #[spirv(ray_geometry_index)] geometry_index: usize, // index of geometry in instance
     #[spirv(primitive_id)] primitive_id: i32, // index of triangle in geometry
-    #[spirv(instance_custom_index)] instance_custom_index: i32,
+    #[spirv(instance_custom_index)] instance_custom_index: usize,
     #[spirv(shader_record_buffer)] shader_record_buffer: &mut ShaderRecordData,
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] mesh_buf: &mut [f32],
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] scene_info: &mut [f32],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] index_buffer: &mut [u32],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] vertex_buffer: &mut [Vec3],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] instance_geometry_count: &mut [u32],
 ) {
     let r = ((instance_id + 1) % 6) as f32 / 6.0;
     let g = ((instance_id + 2) % 6) as f32 / 6.0;
     let b = (instance_id % 6) as f32 / 6.0;
     let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
-    *payload = barycentrics;
+    let index_offset = unsafe {
+        info.mesh_infos
+            .index(instance_custom_index)
+            .primitive_infos
+            .index(geometry_index)
+            .index_offset
+    } as usize;
+    let v0 = vertex_buffer[index_offset];
+    let v1 = vertex_buffer[index_offset + 1];
+    let v2 = vertex_buffer[index_offset + 2];
+    *payload = v0;
 }
 
 #[spirv(miss)]

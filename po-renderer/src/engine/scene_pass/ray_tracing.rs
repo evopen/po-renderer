@@ -75,13 +75,29 @@ impl RayTracing {
         // descriptor set 0
         let as_descriptor_set_layout = device.create_descriptor_set_layout(
             Some("ray tracing as"),
-            &[maligog::DescriptorSetLayoutBinding {
-                binding: 0,
-                descriptor_type: maligog::DescriptorType::AccelerationStructure,
-                stage_flags: maligog::ShaderStageFlags::RAYGEN_KHR,
-                descriptor_count: 1,
-                variable_count: false,
-            }],
+            &[
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 0,
+                    descriptor_type: maligog::DescriptorType::AccelerationStructure,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 1,
+                    descriptor_type: maligog::DescriptorType::StorageBuffer,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 2,
+                    descriptor_type: maligog::DescriptorType::StorageBuffer,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+            ],
         );
         log::debug!("creating skymap descriptor set layout");
         let skymap_descriptor_set_layout = device.create_descriptor_set_layout(
@@ -255,6 +271,8 @@ impl super::ScenePass for RayTracing {
     ) {
         self.as_descriptor_set.update(btreemap! {
             0 => maligog::DescriptorUpdate::AccelerationStructure(vec![scene.tlas().clone()]),
+            1 => maligog::DescriptorUpdate::Buffer(vec![scene.index_buffer().clone()]),
+            2 => maligog::DescriptorUpdate::Buffer(vec![scene.vertex_buffer().clone()]),
         });
         self.skymap_descriptor_set.update(btreemap! {
             0 => maligog::DescriptorUpdate::Image(vec![skymap.clone()]),
