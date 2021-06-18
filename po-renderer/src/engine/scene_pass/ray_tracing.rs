@@ -108,17 +108,14 @@ impl RayTracing {
                 .build()],
         );
         let (tx, rx) = crossbeam::channel::bounded(1);
-        let watcher = util::spirv_builder("./shaders/ray-tracing");
-        let h = std::thread::spawn(|| {
-            log::info!("watching ray tracing shader");
-            watcher
-                .watch(move |result| {
-                    crate::engine::util::handle_shader_compile(result, &tx);
-                })
-                .unwrap();
-            log::info!("watch has ended");
-        });
-        std::mem::forget(h);
+        let builder = util::spirv_builder("./shaders/ray-tracing");
+        let tx1 = tx.clone();
+        let result = builder
+            .watch(move |result| {
+                crate::engine::util::handle_shader_compile(result, &tx1);
+            })
+            .unwrap();
+        crate::engine::util::handle_shader_compile(result, &tx);
 
         let spirv = rx.recv().unwrap();
 

@@ -19,7 +19,7 @@ puffin_egui = "0.3"
 glam = { version = "0.16", features = ["bytemuck"] }
 nfd2 = "0.3.0"
 rpmalloc = "0.2"
-bytemuck = "1.6"
+bytemuck = "1.7"
 rayon = "1.5"
 crossbeam = "0.8"
 dotenv = "0.15"
@@ -31,7 +31,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 
 [dependencies.spirv-builder]
 git = "https://github.com/EmbarkStudios/rust-gpu"
-rev = "c3eff4d4a5a52607aa3bc8b4ba8409f6659425ee"
+rev = "8924fe7b4cc552cf764819a028d6c23ad983b3db"
 features = ["use-installed-tools", "watch"]
 default-features = false
 
