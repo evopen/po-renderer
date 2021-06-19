@@ -18,6 +18,7 @@ pub struct Wireframe {
     device: Device,
     pipeline_layout: maligog::PipelineLayout,
     render_pass: maligog::RenderPass,
+    scene: Option<maligog_gltf::Scene>,
 }
 
 impl Wireframe {
@@ -82,6 +83,7 @@ impl Wireframe {
             device: device.clone(),
             pipeline_layout,
             render_pass,
+            scene: None,
         }
     }
 
@@ -143,12 +145,12 @@ impl super::ScenePass for Wireframe {
     fn execute(
         &self,
         recorder: &mut maligog::CommandRecorder,
-        scene: &maligog_gltf::Scene,
         image_view: &maligog::ImageView,
         camera: &super::super::Camera,
         clear_color: Option<maligog::ClearColorValue>,
         skymap: &maligog::ImageView,
     ) {
+        let scene = self.scene.as_ref().unwrap();
         let mut transform = Transform {
             model: glam::Mat4::IDENTITY,
             view: glam::Mat4::look_at_lh(
@@ -253,6 +255,13 @@ impl super::ScenePass for Wireframe {
                     ),
                 ],
             );
+        }
+    }
+
+    fn prepare_scene(&mut self, scene: &maligog_gltf::Scene) {
+        let need_reload = self.scene.is_none() || self.scene.as_ref().unwrap() == scene;
+        if need_reload {
+            self.scene = Some(scene.clone());
         }
     }
 }

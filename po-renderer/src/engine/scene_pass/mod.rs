@@ -8,7 +8,6 @@ pub trait ScenePass {
     fn execute(
         &self,
         recorder: &mut maligog::CommandRecorder,
-        scene: &maligog_gltf::Scene,
         image_view: &maligog::ImageView,
         camera: &super::Camera,
         clear_color: Option<maligog::ClearColorValue>,
@@ -16,4 +15,6 @@ pub trait ScenePass {
     );
 
     fn update(&mut self);
+
+    fn prepare_scene(&mut self, scene: &maligog_gltf::Scene);
 }

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bytemuck::{Pod, Zeroable};
 use maligog::vk;
 use maligog::Device;
@@ -29,6 +31,7 @@ pub struct RayTracing {
     skymap_descriptor_set_layout: maligog::DescriptorSetLayout,
     skymap_descriptor_set: maligog::DescriptorSet,
     descriptor_helper: crate::engine::DescriptorHelper,
+    scene: Option<maligog_gltf::Scene>,
 }
 
 impl RayTracing {
@@ -237,6 +240,7 @@ impl RayTracing {
             skymap_descriptor_set_layout,
             skymap_descriptor_set,
             descriptor_helper,
+            scene: None,
         }
     }
 
@@ -263,12 +267,12 @@ impl super::ScenePass for RayTracing {
     fn execute(
         &self,
         recorder: &mut maligog::CommandRecorder,
-        scene: &maligog_gltf::Scene,
         image_view: &maligog::ImageView,
         camera: &super::super::Camera,
         clear_color: Option<maligog::ClearColorValue>,
         skymap: &maligog::ImageView,
     ) {
+        let scene = self.scene.as_ref().unwrap();
         self.as_descriptor_set.update(btreemap! {
             0 => maligog::DescriptorUpdate::AccelerationStructure(vec![scene.tlas().clone()]),
             1 => maligog::DescriptorUpdate::Buffer(vec![scene.index_buffer().clone()]),
@@ -390,6 +394,13 @@ impl super::ScenePass for RayTracing {
                     None,
                 )],
             );
+        }
+    }
+
+    fn prepare_scene(&mut self, scene: &maligog_gltf::Scene) {
+        let need_reload = self.scene.is_none() || self.scene.as_ref().unwrap() == scene;
+        if need_reload {
+            self.scene = Some(scene.clone());
         }
     }
 }

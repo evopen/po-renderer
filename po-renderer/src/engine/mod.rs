@@ -243,9 +243,9 @@ impl Engine {
             );
             cmd_buf.encode(|rec| {
                 if let Some(scene) = &self.scene {
+                    self.scene_pass.borrow_mut().prepare_scene(scene);
                     self.scene_pass.borrow_mut().execute(
                         rec,
-                        scene,
                         &frame.create_view(),
                         &self.camera,
                         Some(maligog::ClearColorValue {
