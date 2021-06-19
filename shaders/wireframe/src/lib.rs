@@ -4,7 +4,7 @@
     feature(register_attr),
     register_attr(spirv)
 )]
-#![cfg_attr(debug_assertions, allow(dead_code, unused_imports, unused))]
+#![allow(dead_code, unused_imports, unused)]
 
 use spirv_std::glam::{vec2, vec3, vec4, Mat4, UVec2, UVec3, Vec3, Vec3Swizzles, Vec4};
 use spirv_std::image;

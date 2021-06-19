@@ -4,8 +4,9 @@
     feature(register_attr),
     register_attr(spirv)
 )]
-#![cfg_attr(debug_assertions, allow(dead_code, unused_imports, unused))]
+#![allow(dead_code, unused_imports, unused)]
 
+use spirv_std::glam::uvec3;
 use spirv_std::num_traits::float::Float;
 use spirv_std::RuntimeArray;
 
