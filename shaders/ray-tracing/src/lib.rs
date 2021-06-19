@@ -121,21 +121,21 @@ pub fn closest_hit(
     #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] vertex_buffer: &mut [Vec3],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] instance_geometry_count: &mut [u32],
 ) {
-    let r = ((instance_id + 1) % 6) as f32 / 6.0;
-    let g = ((instance_id + 2) % 6) as f32 / 6.0;
-    let b = (instance_id % 6) as f32 / 6.0;
+    // let r = ((instance_id + 1) % 6) as f32 / 6.0;
+    // let g = ((instance_id + 2) % 6) as f32 / 6.0;
+    // let b = (instance_id % 6) as f32 / 6.0;
     let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
-    let index_offset = unsafe {
-        info.mesh_infos
-            .index(instance_custom_index)
-            .primitive_infos
-            .index(geometry_index)
-            .index_offset
-    } as usize;
-    let v0 = vertex_buffer[index_offset];
-    let v1 = vertex_buffer[index_offset + 1];
-    let v2 = vertex_buffer[index_offset + 2];
-    *payload = v0;
+    // let index_offset = unsafe {
+    //     info.mesh_infos
+    //         .index(instance_custom_index)
+    //         .primitive_infos
+    //         .index(geometry_index)
+    //         .index_offset
+    // } as usize;
+    // let v0 = vertex_buffer[index_offset];
+    // let v1 = vertex_buffer[index_offset + 1];
+    // let v2 = vertex_buffer[index_offset + 2];
+    *payload = barycentrics;
 }
 
 #[spirv(miss)]
