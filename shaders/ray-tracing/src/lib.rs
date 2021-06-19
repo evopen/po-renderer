@@ -93,19 +93,11 @@ pub struct ShaderRecordData {
     vertex_offset: u32,
 }
 
-struct PrimitiveInfo {
+pub struct GeometryInfo {
     index_offset: u64,
     vertex_offset: u64,
     index_count: u32,
     vertex_count: u32,
-}
-
-pub struct MeshInfo {
-    primitive_infos: RuntimeArray<PrimitiveInfo>,
-}
-
-pub struct Info {
-    mesh_infos: RuntimeArray<MeshInfo>,
 }
 
 #[spirv(closest_hit)]
@@ -114,28 +106,31 @@ pub fn closest_hit(
     #[spirv(hit_attribute)] hit_attr: &mut Vec2,
     #[spirv(instance_id)] instance_id: i32, // index of instance in tlas
     #[spirv(ray_geometry_index)] geometry_index: usize, // index of geometry in instance
-    #[spirv(primitive_id)] primitive_id: i32, // index of triangle in geometry
+    #[spirv(primitive_id)] primitive_id: usize, // index of triangle in geometry
     #[spirv(instance_custom_index)] instance_custom_index: usize,
     #[spirv(shader_record_buffer)] shader_record_buffer: &mut ShaderRecordData,
+    #[spirv(world_to_object)] world_to_object: glam::Affine3A,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] index_buffer: &mut [u32],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] vertex_buffer: &mut [Vec3],
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] instance_geometry_count: &mut [u32],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] geometry_infos: &mut [GeometryInfo],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 4)] geometry_info_offsets: &mut [usize],
 ) {
     // let r = ((instance_id + 1) % 6) as f32 / 6.0;
     // let g = ((instance_id + 2) % 6) as f32 / 6.0;
     // let b = (instance_id % 6) as f32 / 6.0;
     let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
-    // let index_offset = unsafe {
-    //     info.mesh_infos
-    //         .index(instance_custom_index)
-    //         .primitive_infos
-    //         .index(geometry_index)
-    //         .index_offset
-    // } as usize;
-    // let v0 = vertex_buffer[index_offset];
-    // let v1 = vertex_buffer[index_offset + 1];
-    // let v2 = vertex_buffer[index_offset + 2];
-    *payload = barycentrics;
+
+    let geometry_info = &geometry_infos[geometry_info_offsets[instance_custom_index]];
+    let index_offset = (geometry_info.index_offset / 4) as usize; // by index
+    let vertex_offset = (geometry_info.index_offset / (3 * 4)) as usize; // by index
+
+    let v0 = vertex_buffer[vertex_offset + index_buffer[index_offset + primitive_id * 3] as usize];
+    let v1 =
+        vertex_buffer[vertex_offset + index_buffer[index_offset + primitive_id * 3 + 1] as usize];
+    let v2 =
+        vertex_buffer[vertex_offset + index_buffer[index_offset + primitive_id * 3 + 2] as usize];
+    let object_normal = (v1 - v0).cross(v2 - v0);
+    *payload = object_normal;
 }
 
 #[spirv(miss)]

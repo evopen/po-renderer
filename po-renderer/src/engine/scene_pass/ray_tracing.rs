@@ -17,6 +17,15 @@ pub struct CameraInfo {
     proj_inv: glam::Mat4,
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct GeometryInfo {
+    pub index_offset: u64,
+    pub vertex_offset: u64,
+    pub index_count: u32,
+    pub vertex_count: u32,
+}
+
 pub struct RayTracing {
     pipeline: maligog::RayTracingPipeline,
     rx: crossbeam::channel::Receiver<Vec<u8>>,
@@ -32,6 +41,10 @@ pub struct RayTracing {
     skymap_descriptor_set: maligog::DescriptorSet,
     descriptor_helper: crate::engine::DescriptorHelper,
     scene: Option<maligog_gltf::Scene>,
+    geometry_infos: Vec<GeometryInfo>,
+    geometry_info_offsets: Vec<usize>,
+    geometry_info_offsets_buffer: maligog::Buffer,
+    geometry_infos_buffer: maligog::Buffer,
 }
 
 impl RayTracing {
@@ -95,6 +108,20 @@ impl RayTracing {
                 },
                 maligog::DescriptorSetLayoutBinding {
                     binding: 2,
+                    descriptor_type: maligog::DescriptorType::StorageBuffer,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 3,
+                    descriptor_type: maligog::DescriptorType::StorageBuffer,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 4,
                     descriptor_type: maligog::DescriptorType::StorageBuffer,
                     stage_flags: maligog::ShaderStageFlags::ALL,
                     descriptor_count: 1,
@@ -241,6 +268,20 @@ impl RayTracing {
             skymap_descriptor_set,
             descriptor_helper,
             scene: None,
+            geometry_infos: Vec::new(),
+            geometry_info_offsets: Vec::new(),
+            geometry_info_offsets_buffer: device.create_buffer(
+                Some("placeholder"),
+                1,
+                maligog::BufferUsageFlags::empty(),
+                maligog::MemoryLocation::GpuOnly,
+            ),
+            geometry_infos_buffer: device.create_buffer(
+                Some("placeholder"),
+                1,
+                maligog::BufferUsageFlags::empty(),
+                maligog::MemoryLocation::GpuOnly,
+            ),
         }
     }
 
@@ -277,6 +318,8 @@ impl super::ScenePass for RayTracing {
             0 => maligog::DescriptorUpdate::AccelerationStructure(vec![scene.tlas().clone()]),
             1 => maligog::DescriptorUpdate::Buffer(vec![scene.index_buffer().clone()]),
             2 => maligog::DescriptorUpdate::Buffer(vec![scene.vertex_buffer().clone()]),
+            3 => maligog::DescriptorUpdate::Buffer(vec![maligog::BufferView { buffer: self.geometry_infos_buffer.clone(), offset: 0}]),
+            4 => maligog::DescriptorUpdate::Buffer(vec![maligog::BufferView { buffer: self.geometry_info_offsets_buffer.clone(), offset: 0}]),
         });
         self.skymap_descriptor_set.update(btreemap! {
             0 => maligog::DescriptorUpdate::Image(vec![skymap.clone()]),
@@ -401,6 +444,34 @@ impl super::ScenePass for RayTracing {
         let need_reload = self.scene.is_none() || self.scene.as_ref().unwrap() == scene;
         if need_reload {
             self.scene = Some(scene.clone());
+            self.geometry_info_offsets.push(0);
+            for (i, mesh) in scene.mesh_infos().iter().enumerate() {
+                let convert = mesh.primitive_infos.iter().map(|i| {
+                    GeometryInfo {
+                        index_offset: i.index_offset,
+                        vertex_offset: i.vertex_offset,
+                        index_count: i.index_count,
+                        vertex_count: i.vertex_count,
+                    }
+                });
+                self.geometry_infos.extend(convert);
+
+                // how many geometries in every mesh
+                self.geometry_info_offsets
+                    .push(self.geometry_info_offsets[i] + mesh.primitive_infos.len());
+            }
+            self.geometry_infos_buffer = self.device.create_buffer_init(
+                Some("geometry infos"),
+                bytemuck::cast_slice(&self.geometry_infos),
+                maligog::BufferUsageFlags::STORAGE_BUFFER,
+                maligog::MemoryLocation::GpuOnly,
+            );
+            self.geometry_info_offsets_buffer = self.device.create_buffer_init(
+                Some("geometry info offsets"),
+                bytemuck::cast_slice(&self.geometry_info_offsets),
+                maligog::BufferUsageFlags::STORAGE_BUFFER,
+                maligog::MemoryLocation::GpuOnly,
+            );
         }
     }
 }
