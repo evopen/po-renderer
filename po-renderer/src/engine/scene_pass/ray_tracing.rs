@@ -150,7 +150,10 @@ impl RayTracing {
             &[maligog::PushConstantRange::builder()
                 .offset(0)
                 .size(std::mem::size_of::<CameraInfo>() as u32)
-                .stage_flags(maligog::ShaderStageFlags::RAYGEN_KHR)
+                .stage_flags(
+                    maligog::ShaderStageFlags::RAYGEN_KHR
+                        | maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                )
                 .build()],
         );
         let (tx, rx) = crossbeam::channel::bounded(1);
@@ -358,7 +361,7 @@ impl super::ScenePass for RayTracing {
                 0,
             );
             rec.push_constants(
-                maligog::ShaderStageFlags::RAYGEN_KHR,
+                maligog::ShaderStageFlags::RAYGEN_KHR | maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
                 &bytemuck::cast_slice(&[camera_info]),
             );
             rec.trace_ray(
@@ -441,9 +444,11 @@ impl super::ScenePass for RayTracing {
     }
 
     fn prepare_scene(&mut self, scene: &maligog_gltf::Scene) {
-        let need_reload = self.scene.is_none() || self.scene.as_ref().unwrap() == scene;
+        let need_reload = self.scene.is_none() || self.scene.as_ref().unwrap() != scene;
         if need_reload {
+            log::info!("reloading scene");
             self.scene = Some(scene.clone());
+
             self.geometry_info_offsets.push(0);
             for (i, mesh) in scene.mesh_infos().iter().enumerate() {
                 let convert = mesh.primitive_infos.iter().map(|i| {
