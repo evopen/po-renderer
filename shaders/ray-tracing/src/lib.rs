@@ -111,7 +111,7 @@ pub fn closest_hit(
     #[spirv(shader_record_buffer)] shader_record_buffer: &mut ShaderRecordData,
     // #[spirv(world_to_object)] world_to_object: glam::Affine3A,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] index_buffer: &mut [u32],
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] vertex_buffer: &mut [Vec3],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] vertex_buffer: &mut [f32],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] geometry_infos: &mut [GeometryInfo],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 4)] geometry_info_offsets: &mut [u32],
     #[spirv(push_constant)] camera_info: &CameraInfo,
@@ -120,17 +120,30 @@ pub fn closest_hit(
 
     let geometry_info = &geometry_infos[geometry_info_offsets[instance_custom_index] as usize];
     let index_offset = (geometry_info.index_offset / 4) as usize; // by index
-    let vertex_offset = (geometry_info.vertex_offset / (3 * 4)) as usize; // by index
+    let vertex_offset = (geometry_info.vertex_offset / 4) as usize; // by index
 
-    // let v0 = vertex_buffer[vertex_offset + index_buffer[index_offset + primitive_id * 3] as usize];
-    // let v1 =
-    //     vertex_buffer[vertex_offset + index_buffer[index_offset + primitive_id * 3 + 1] as usize];
-    // let v2 =
-    //     vertex_buffer[vertex_offset + index_buffer[index_offset + primitive_id * 3 + 2] as usize];
+    let v0_index = index_buffer[index_offset + primitive_id * 3] as usize;
+    let v0 = vec3(
+        vertex_buffer[vertex_offset + v0_index * 3],
+        vertex_buffer[vertex_offset + v0_index * 3 + 1],
+        vertex_buffer[vertex_offset + v0_index * 3 + 2],
+    );
+    let v1_index = index_buffer[index_offset + primitive_id * 3 + 1] as usize;
+    let v1 = vec3(
+        vertex_buffer[vertex_offset + v1_index * 3],
+        vertex_buffer[vertex_offset + v1_index * 3 + 1],
+        vertex_buffer[vertex_offset + v1_index * 3 + 2],
+    );
+    let v2_index = index_buffer[index_offset + primitive_id * 3 + 2] as usize;
+    let v2 = vec3(
+        vertex_buffer[vertex_offset + v2_index * 3],
+        vertex_buffer[vertex_offset + v2_index * 3 + 1],
+        vertex_buffer[vertex_offset + v2_index * 3 + 2],
+    );
 
-    // let object_normal = (v1 - v0).cross(v2 - v0);
-    // let world_normal = camera_info.view_inv.inverse() * object_normal.extend(1.0);
-    *payload = barycentrics;
+    let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
+    let object_normal = (v1 - v0).cross(v2 - v0).normalize();
+    *payload = object_position.abs();
 }
 
 #[spirv(miss)]
