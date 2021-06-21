@@ -107,21 +107,18 @@ pub fn closest_hit(
     #[spirv(instance_id)] instance_id: i32, // index of instance in tlas
     #[spirv(ray_geometry_index)] geometry_index: usize, // index of geometry in instance
     #[spirv(primitive_id)] primitive_id: usize, // index of triangle in geometry
-    #[spirv(instance_custom_index)] instance_custom_index: usize,
+    #[spirv(instance_custom_index)] instance_custom_index: usize, // blas id
     #[spirv(shader_record_buffer)] shader_record_buffer: &mut ShaderRecordData,
     // #[spirv(world_to_object)] world_to_object: glam::Affine3A,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] index_buffer: &mut [u32],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] vertex_buffer: &mut [Vec3],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] geometry_infos: &mut [GeometryInfo],
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 4)] geometry_info_offsets: &mut [usize],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 4)] geometry_info_offsets: &mut [u32],
     #[spirv(push_constant)] camera_info: &CameraInfo,
 ) {
-    // let r = ((instance_id + 1) % 6) as f32 / 6.0;
-    // let g = ((instance_id + 2) % 6) as f32 / 6.0;
-    // let b = (instance_id % 6) as f32 / 6.0;
     let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
 
-    let geometry_info = &geometry_infos[geometry_info_offsets[instance_custom_index]];
+    let geometry_info = &geometry_infos[geometry_info_offsets[instance_custom_index] as usize];
     let index_offset = (geometry_info.index_offset / 4) as usize; // by index
     let vertex_offset = (geometry_info.vertex_offset / (3 * 4)) as usize; // by index
 

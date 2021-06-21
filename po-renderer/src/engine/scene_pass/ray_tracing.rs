@@ -42,7 +42,7 @@ pub struct RayTracing {
     descriptor_helper: crate::engine::DescriptorHelper,
     scene: Option<maligog_gltf::Scene>,
     geometry_infos: Vec<GeometryInfo>,
-    geometry_info_offsets: Vec<usize>,
+    geometry_info_offsets: Vec<u32>,
     geometry_info_offsets_buffer: maligog::Buffer,
     geometry_infos_buffer: maligog::Buffer,
 }
@@ -463,7 +463,7 @@ impl super::ScenePass for RayTracing {
 
                 // how many geometries in every mesh
                 self.geometry_info_offsets
-                    .push(self.geometry_info_offsets[i] + mesh.primitive_infos.len());
+                    .push(self.geometry_info_offsets[i] + mesh.primitive_infos.len() as u32);
             }
             self.geometry_infos_buffer = self.device.create_buffer_init(
                 Some("geometry infos"),
