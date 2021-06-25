@@ -84,7 +84,9 @@ pub fn main(
             payload,
         );
 
-        color_image.write(pixel.xy(), vec4(payload.x, payload.y, payload.z, 1.0));
+        let xy = UVec2::new(pixel.x, launch_size.y - pixel.y);
+
+        color_image.write(xy, payload.extend(1.0));
     }
 }
 
@@ -119,6 +121,7 @@ pub fn closest_hit(
     #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] vertex_buffer: &mut [f32],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] geometry_infos: &mut [GeometryInfo],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 4)] geometry_info_offsets: &mut [u32],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 5)] transform_buffer: &mut [Mat4],
     #[spirv(push_constant)] camera_info: &CameraInfo,
 ) {
     let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
@@ -146,10 +149,17 @@ pub fn closest_hit(
         vertex_buffer[vertex_offset + v2_index * 3 + 2],
     );
 
-    let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
-    let object_normal = (v1 - v0).cross(v2 - v0).normalize();
+    let object_to_world = transform_buffer[instance_id as usize];
 
-    *payload = Vec3::splat(ray_tmax / 100.0);
+    let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
+    // let object_normal = (v1 - v0).cross(v2 - v0).normalize();
+    let world_position = object_to_world.transform_vector3(object_position);
+    let world_v0 = object_to_world.transform_point3(v0);
+    let world_v1 = object_to_world.transform_point3(v1);
+    let world_v2 = object_to_world.transform_point3(v2);
+    let world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
+
+    *payload = world_normal;
 }
 
 #[spirv(miss)]
@@ -169,7 +179,7 @@ pub fn miss(
     >,
 ) {
     // *payload = vec3(1.0, 0.5, 0.23);
-    let coord = sample_sphereical_map(&&world_ray_direction);
+    let coord = sample_sphereical_map(&world_ray_direction);
     let color: Vec4 = sky_texture.sample_by_lod(*sampler, coord, 0.0);
     *payload = color.xyz();
 }

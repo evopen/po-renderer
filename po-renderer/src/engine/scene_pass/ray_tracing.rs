@@ -127,6 +127,13 @@ impl RayTracing {
                     descriptor_count: 1,
                     variable_count: false,
                 },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 5,
+                    descriptor_type: maligog::DescriptorType::StorageBuffer,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
             ],
         );
         log::debug!("creating skymap descriptor set layout");
@@ -323,6 +330,7 @@ impl super::ScenePass for RayTracing {
             2 => maligog::DescriptorUpdate::Buffer(vec![scene.vertex_buffer().clone()]),
             3 => maligog::DescriptorUpdate::Buffer(vec![maligog::BufferView { buffer: self.geometry_infos_buffer.clone(), offset: 0}]),
             4 => maligog::DescriptorUpdate::Buffer(vec![maligog::BufferView { buffer: self.geometry_info_offsets_buffer.clone(), offset: 0}]),
+            5 => maligog::DescriptorUpdate::Buffer(vec![scene.transform_buffer().clone()]),
         });
         self.skymap_descriptor_set.update(btreemap! {
             0 => maligog::DescriptorUpdate::Image(vec![skymap.clone()]),
