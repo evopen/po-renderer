@@ -108,6 +108,11 @@ pub fn closest_hit(
     #[spirv(ray_geometry_index)] geometry_index: usize, // index of geometry in instance
     #[spirv(primitive_id)] primitive_id: usize, // index of triangle in geometry
     #[spirv(instance_custom_index)] instance_custom_index: usize, // blas id
+    #[spirv(ray_tmax)] ray_tmax: f32,
+    #[spirv(world_ray_origin)] world_ray_origin: Vec3,
+    #[spirv(world_ray_direction)] world_ray_direction: Vec3,
+    #[spirv(object_ray_origin)] object_ray_origin: Vec3,
+    #[spirv(object_ray_direction)] object_ray_direction: Vec3,
     #[spirv(shader_record_buffer)] shader_record_buffer: &mut ShaderRecordData,
     // #[spirv(world_to_object)] world_to_object: glam::Affine3A,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] index_buffer: &mut [u32],
@@ -143,7 +148,8 @@ pub fn closest_hit(
 
     let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
     let object_normal = (v1 - v0).cross(v2 - v0).normalize();
-    *payload = object_position.abs();
+
+    *payload = Vec3::splat(ray_tmax / 100.0);
 }
 
 #[spirv(miss)]
