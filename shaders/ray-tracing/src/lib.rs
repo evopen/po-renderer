@@ -6,6 +6,8 @@
 )]
 #![allow(dead_code, unused_imports, unused)]
 
+mod util;
+
 use spirv_std::glam::uvec3;
 use spirv_std::num_traits::float::Float;
 use spirv_std::RuntimeArray;
