@@ -31,7 +31,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 
 [dependencies.spirv-builder]
 git = "https://github.com/EmbarkStudios/rust-gpu"
-rev = "8924fe7b4cc552cf764819a028d6c23ad983b3db"
+rev = "f224b5aa1a5e73d0128d23d4bb75b8c23911f180"
 features = ["use-installed-tools", "watch"]
 default-features = false
 
