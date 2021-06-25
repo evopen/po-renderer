@@ -195,7 +195,7 @@ impl super::ScenePass for Wireframe {
                 let tlas = scene.tlas();
                 for geometry in tlas.geometries() {
                     for instance in geometry.blas_instances() {
-                        // transform.model.clone_from(instance.transform());
+                        transform.model.clone_from(instance.transform());
                         rec.push_constants(
                             maligog::ShaderStageFlags::VERTEX,
                             &bytemuck::cast_slice(&[transform]),
@@ -259,7 +259,7 @@ impl super::ScenePass for Wireframe {
     }
 
     fn prepare_scene(&mut self, scene: &maligog_gltf::Scene) {
-        let need_reload = self.scene.is_none() || self.scene.as_ref().unwrap() == scene;
+        let need_reload = self.scene.is_none() || self.scene.as_ref().unwrap() != scene;
         if need_reload {
             self.scene = Some(scene.clone());
         }
