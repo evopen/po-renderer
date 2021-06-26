@@ -108,7 +108,7 @@ pub struct GeometryInfo {
 pub fn closest_hit(
     #[spirv(incoming_ray_payload)] payload: &mut Vec3,
     #[spirv(hit_attribute)] hit_attr: &mut Vec2,
-    #[spirv(instance_id)] instance_id: i32, // index of instance in tlas
+    #[spirv(instance_id)] instance_id: usize, // index of instance in tlas
     #[spirv(ray_geometry_index)] geometry_index: usize, // index of geometry in instance
     #[spirv(primitive_id)] primitive_id: usize, // index of triangle in geometry
     #[spirv(instance_custom_index)] instance_custom_index: usize, // blas id
@@ -152,11 +152,11 @@ pub fn closest_hit(
         vertex_buffer[vertex_offset + v2_index * 3 + 2],
     );
 
-    let object_to_world = transform_buffer[instance_id as usize];
+    let object_to_world = transform_buffer[instance_id];
 
     let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
     // let object_normal = (v1 - v0).cross(v2 - v0).normalize();
-    let world_position = object_to_world.transform_vector3(object_position);
+    let world_position = object_to_world.transform_point3(object_position);
     let world_v0 = object_to_world.transform_point3(v0);
     let world_v1 = object_to_world.transform_point3(v1);
     let world_v2 = object_to_world.transform_point3(v2);
