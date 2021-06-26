@@ -457,21 +457,24 @@ impl super::ScenePass for RayTracing {
             log::info!("reloading scene");
             self.scene = Some(scene.clone());
 
+            self.geometry_info_offsets.clear();
+            self.geometry_infos.clear();
             self.geometry_info_offsets.push(0);
             for (i, mesh) in scene.mesh_infos().iter().enumerate() {
                 let convert = mesh.primitive_infos.iter().map(|i| {
                     GeometryInfo {
                         index_offset: i.index_offset,
                         vertex_offset: i.vertex_offset,
-                        index_count: i.index_count,
-                        vertex_count: i.vertex_count,
+                        index_count: i.index_count as u32,
+                        vertex_count: i.vertex_count as u32,
                     }
                 });
                 self.geometry_infos.extend(convert);
 
                 // how many geometries in every mesh
-                self.geometry_info_offsets
-                    .push(self.geometry_info_offsets[i] + mesh.primitive_infos.len() as u32);
+                self.geometry_info_offsets.push(
+                    self.geometry_info_offsets.last().unwrap() + mesh.primitive_infos.len() as u32,
+                );
             }
             self.geometry_infos_buffer = self.device.create_buffer_init(
                 Some("geometry infos"),

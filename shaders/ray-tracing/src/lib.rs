@@ -128,7 +128,8 @@ pub fn closest_hit(
 ) {
     let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
 
-    let geometry_info = &geometry_infos[geometry_info_offsets[instance_custom_index] as usize];
+    let geometry_info =
+        &geometry_infos[geometry_info_offsets[instance_custom_index] as usize + geometry_index];
     let index_offset = (geometry_info.index_offset / 4) as usize; // by index
     let vertex_offset = (geometry_info.vertex_offset / 4) as usize; // by index
 
