@@ -75,10 +75,10 @@ impl Camera {
                 self.location += self.right * distance;
             }
             Direction::Up => {
-                self.location += self.up * distance;
+                self.location += Vec3::new(0.0, 1.0, 0.0) * distance;
             }
             Direction::Down => {
-                self.location -= self.up * distance;
+                self.location -= Vec3::new(0.0, 1.0, 0.0) * distance;
             }
         }
     }
