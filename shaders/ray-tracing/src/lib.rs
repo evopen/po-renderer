@@ -159,7 +159,8 @@ pub fn closest_hit(
     let world_v0 = object_to_world.transform_point3(v0);
     let world_v1 = object_to_world.transform_point3(v1);
     let world_v2 = object_to_world.transform_point3(v2);
-    let world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
+    let mut world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
+    world_normal = util::facefoward(&world_normal, &world_ray_direction);
 
     *payload = world_normal;
 }
