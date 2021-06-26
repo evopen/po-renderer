@@ -19,7 +19,7 @@ puffin_egui = "0.3"
 glam = { version = "0.16", features = ["bytemuck"] }
 nfd2 = "0.3.0"
 rpmalloc = "0.2"
-bytemuck = "1.7"
+bytemuck = { version = "1.7", features = ["derive"] }
 rayon = "1.5"
 crossbeam = "0.8"
 dotenv = "0.15"

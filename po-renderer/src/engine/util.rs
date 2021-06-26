@@ -16,7 +16,9 @@ pub fn spirv_builder(path_to_crate: &str) -> spirv_builder::SpirvBuilder {
         .capability(spirv_builder::Capability::Int8)
         .capability(spirv_builder::Capability::Int16)
         .capability(spirv_builder::Capability::Int64)
+        .capability(spirv_builder::Capability::RuntimeDescriptorArray)
         .extension("SPV_KHR_ray_tracing")
+        .extension("SPV_EXT_descriptor_indexing")
         .name_variables(false)
         .print_metadata(spirv_builder::MetadataPrintout::None)
 }

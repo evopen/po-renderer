@@ -18,12 +18,13 @@ pub struct CameraInfo {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable)]
 pub struct GeometryInfo {
     pub index_offset: u64,
     pub vertex_offset: u64,
-    pub index_count: u32,
-    pub vertex_count: u32,
+    pub index_count: u64,
+    pub vertex_count: u64,
+    pub material_index: u64,
 }
 
 pub struct RayTracing {
@@ -45,6 +46,7 @@ pub struct RayTracing {
     geometry_info_offsets: Vec<u32>,
     geometry_info_offsets_buffer: maligog::Buffer,
     geometry_infos_buffer: maligog::Buffer,
+    default_sampler: maligog::Sampler,
 }
 
 impl RayTracing {
@@ -129,6 +131,27 @@ impl RayTracing {
                 },
                 maligog::DescriptorSetLayoutBinding {
                     binding: 5,
+                    descriptor_type: maligog::DescriptorType::StorageBuffer,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 6,
+                    descriptor_type: maligog::DescriptorType::Sampler(None),
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 500,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 7,
+                    descriptor_type: maligog::DescriptorType::SampledImage,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 500,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 8,
                     descriptor_type: maligog::DescriptorType::StorageBuffer,
                     stage_flags: maligog::ShaderStageFlags::ALL,
                     descriptor_count: 1,
@@ -263,6 +286,14 @@ impl RayTracing {
             &skymap_descriptor_set_layout,
         );
 
+        let default_sampler = device.create_sampler(
+            Some("rt default sampler"),
+            maligog::Filter::NEAREST,
+            maligog::Filter::NEAREST,
+            maligog::SamplerAddressMode::CLAMP_TO_EDGE,
+            maligog::SamplerAddressMode::CLAMP_TO_EDGE,
+        );
+
         Self {
             pipeline,
             rx,
@@ -292,6 +323,7 @@ impl RayTracing {
                 maligog::BufferUsageFlags::empty(),
                 maligog::MemoryLocation::GpuOnly,
             ),
+            default_sampler,
         }
     }
 
@@ -465,8 +497,9 @@ impl super::ScenePass for RayTracing {
                     GeometryInfo {
                         index_offset: i.index_offset,
                         vertex_offset: i.vertex_offset,
-                        index_count: i.index_count as u32,
-                        vertex_count: i.vertex_count as u32,
+                        index_count: i.index_count,
+                        vertex_count: i.vertex_count,
+                        material_index: i.material_index,
                     }
                 });
                 self.geometry_infos.extend(convert);
@@ -488,6 +521,22 @@ impl super::ScenePass for RayTracing {
                 maligog::BufferUsageFlags::STORAGE_BUFFER,
                 maligog::MemoryLocation::GpuOnly,
             );
+            let mut samplers = vec![self.default_sampler.clone()];
+            samplers.extend_from_slice(scene.samplers());
+
+            let material_info_buffer = self.device.create_buffer_init(
+                Some("material info"),
+                bytemuck::cast_slice(&scene.material_infos()),
+                maligog::BufferUsageFlags::STORAGE_BUFFER,
+                maligog::MemoryLocation::GpuOnly,
+            );
+            let view = maligog::BufferView {
+                buffer: material_info_buffer,
+                offset: 0,
+            };
+            self.as_descriptor_set.update(btreemap! {
+                8 => maligog::DescriptorUpdate::Buffer(vec![view]),
+            });
         }
     }
 }

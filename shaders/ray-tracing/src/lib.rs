@@ -9,6 +9,7 @@
 mod util;
 
 use spirv_std::glam::uvec3;
+use spirv_std::image::{Image2dArray, Image2dI, Image2dU};
 use spirv_std::num_traits::float::Float;
 use spirv_std::RuntimeArray;
 
@@ -100,8 +101,13 @@ pub struct ShaderRecordData {
 pub struct GeometryInfo {
     index_offset: u64,
     vertex_offset: u64,
-    index_count: u32,
-    vertex_count: u32,
+    index_count: u64,
+    vertex_count: u64,
+    material_index: u64,
+}
+
+pub struct MaterialInfo {
+    base_color_factor: glam::Vec4,
 }
 
 #[spirv(closest_hit)]
@@ -121,9 +127,12 @@ pub fn closest_hit(
     // #[spirv(world_to_object)] world_to_object: glam::Affine3A,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] index_buffer: &mut [u32],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] vertex_buffer: &mut [f32],
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] geometry_infos: &mut [GeometryInfo],
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 4)] geometry_info_offsets: &mut [u32],
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 5)] transform_buffer: &mut [Mat4],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 3)] geometry_infos: &mut [GeometryInfo], // per-BLAS
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 4)] geometry_info_offsets: &mut [u32], // per-BLAS
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 5)] transform_buffer: &mut [Mat4], // per-instance
+    #[spirv(descriptor_set = 0, binding = 6)] samplers: &RuntimeArray<Sampler>,
+    #[spirv(descriptor_set = 0, binding = 7)] images: &RuntimeArray<Image2dU>,
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 8)] material_infos: &mut [MaterialInfo],
     #[spirv(push_constant)] camera_info: &CameraInfo,
 ) {
     let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
@@ -163,7 +172,9 @@ pub fn closest_hit(
     let mut world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
     world_normal = util::facefoward(&world_normal, &world_ray_direction);
 
-    *payload = world_normal;
+    let material_info = &material_infos[geometry_info.material_index as usize];
+
+    *payload = material_info.base_color_factor.xyz();
 }
 
 #[spirv(miss)]
