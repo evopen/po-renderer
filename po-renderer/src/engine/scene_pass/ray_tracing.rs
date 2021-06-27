@@ -18,6 +18,16 @@ pub struct CameraInfo {
 }
 
 #[repr(C)]
+#[derive(Copy, Clone, Debug, Zeroable, Pod)]
+pub struct MaterialInfo {
+    base_color_factor: glam::Vec4,
+    has_color_texture: u32,
+    sampler_index: u32,
+    image_index: u32,
+    padding: u32,
+}
+
+#[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct GeometryInfo {
     pub index_offset: u64,
@@ -552,9 +562,32 @@ impl super::ScenePass for RayTracing {
             let mut samplers = vec![self.default_sampler.clone()];
             samplers.extend_from_slice(scene.samplers());
 
+            let material_infos = scene
+                .material_infos()
+                .iter()
+                .map(|i| {
+                    let mut has_color_texture = 0;
+                    let mut sampler_index = 0;
+                    let mut image_index = 0;
+                    if let Some(texture) = i.base_color_texture {
+                        has_color_texture = 1;
+                        sampler_index = texture.sampler_index;
+                        image_index = texture.image_index;
+                    }
+
+                    MaterialInfo {
+                        base_color_factor: i.base_color_factor,
+                        has_color_texture,
+                        sampler_index,
+                        image_index,
+                        padding: 0,
+                    }
+                })
+                .collect::<Vec<_>>();
+
             let material_info_buffer = self.device.create_buffer_init(
                 Some("material info"),
-                bytemuck::cast_slice(&scene.material_infos()),
+                bytemuck::cast_slice(&material_infos),
                 maligog::BufferUsageFlags::STORAGE_BUFFER,
                 maligog::MemoryLocation::GpuOnly,
             );
@@ -563,9 +596,16 @@ impl super::ScenePass for RayTracing {
                 offset: 0,
             };
             self.as_descriptor_set.update(btreemap! {
+                6 => maligog::DescriptorUpdate::Sampler(scene.samplers().to_vec()),
+            });
+            if scene.images().len() > 0 {
+                self.as_descriptor_set.update(btreemap! {
+                    7 => maligog::DescriptorUpdate::Image(scene.images().iter().map(|i|i.create_view()).collect()),
+                });
+            }
+
+            self.as_descriptor_set.update(btreemap! {
                 8 => maligog::DescriptorUpdate::Buffer(vec![view]),
-                // 9 => maligog::DescriptorUpdate::Buffer(vec![scene.color_buffer()]),
-                // 10 => maligog::DescriptorUpdate::Buffer(vec![scene.tex_coord_buffer()]),
             });
             if let Some(b) = scene.color_buffer() {
                 self.as_descriptor_set.update(btreemap! {

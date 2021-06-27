@@ -9,7 +9,7 @@
 mod util;
 
 use spirv_std::glam::uvec3;
-use spirv_std::image::{Image2dArray, Image2dI, Image2dU};
+use spirv_std::image::{Image2d, Image2dArray, Image2dI, Image2dU};
 use spirv_std::num_traits::float::Float;
 use spirv_std::RuntimeArray;
 
@@ -112,6 +112,10 @@ pub struct GeometryInfo {
 
 pub struct MaterialInfo {
     base_color_factor: glam::Vec4,
+    has_texture: u32,
+    sampler_index: u32,
+    image_index: u32,
+    padding: u32,
 }
 
 #[spirv(closest_hit)]
@@ -135,7 +139,7 @@ pub fn closest_hit(
     #[spirv(storage_buffer, descriptor_set = 0, binding = 4)] geometry_info_offsets: &mut [u32], // per-BLAS
     #[spirv(storage_buffer, descriptor_set = 0, binding = 5)] transform_buffer: &mut [Mat4], // per-instance
     #[spirv(descriptor_set = 0, binding = 6)] samplers: &RuntimeArray<Sampler>,
-    #[spirv(descriptor_set = 0, binding = 7)] images: &RuntimeArray<Image2dU>,
+    #[spirv(descriptor_set = 0, binding = 7)] images: &RuntimeArray<Image2d>,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 8)] material_infos: &mut [MaterialInfo],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 9)] color_buffer: &mut [Vec4],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 10)] tex_coord_buffer: &mut [Vec2],
@@ -171,32 +175,69 @@ pub fn closest_hit(
         vertex_buffer[vertex_offset + v2_index * 3 + 2],
     );
 
-    if geometry_info.has_color == 1 {
-        let v0_color = color_buffer[color_offset + v0_index];
-        let v1_color = color_buffer[color_offset + v1_index];
-        let v2_color = color_buffer[color_offset + v2_index];
-        let color =
-            v0_color * barycentrics.x + v1_color * barycentrics.y + v2_color * barycentrics.z;
-        *payload = (color * material_info.base_color_factor).xyz();
-    } else if geometry_info.has_tex_coord == 1 {
+    let object_to_world = transform_buffer[instance_id];
+
+    let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
+    // let object_normal = (v1 - v0).cross(v2 - v0).normalize();
+    let world_position = object_to_world.transform_point3(object_position);
+    let world_v0 = object_to_world.transform_point3(v0);
+    let world_v1 = object_to_world.transform_point3(v1);
+    let world_v2 = object_to_world.transform_point3(v2);
+    let mut world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
+    world_normal = util::facefoward(&world_normal, &world_ray_direction);
+
+    if geometry_info.has_tex_coord == 1 {
         let v0_tex_coord = tex_coord_buffer[tex_coord_offset + v0_index];
         let v1_tex_coord = tex_coord_buffer[tex_coord_offset + v1_index];
         let v2_tex_coord = tex_coord_buffer[tex_coord_offset + v2_index];
-        *payload = Vec3::splat(0.5);
-    } else {
-        let object_to_world = transform_buffer[instance_id];
-
-        let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
-        // let object_normal = (v1 - v0).cross(v2 - v0).normalize();
-        let world_position = object_to_world.transform_point3(object_position);
-        let world_v0 = object_to_world.transform_point3(v0);
-        let world_v1 = object_to_world.transform_point3(v1);
-        let world_v2 = object_to_world.transform_point3(v2);
-        let mut world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
-        world_normal = util::facefoward(&world_normal, &world_ray_direction);
-
-        *payload = world_normal;
+        let tex_coord = v0_tex_coord * barycentrics.x
+            + v1_tex_coord * barycentrics.y
+            + v2_tex_coord * barycentrics.z;
+        if material_info.has_texture == 1 {
+            let sampler = unsafe { samplers.index(material_info.sampler_index as usize) };
+            let image = unsafe { images.index(material_info.image_index as usize) };
+            let texel: Vec4 = image.sample_by_lod(*sampler, tex_coord, 0.0);
+            let color = texel * material_info.base_color_factor;
+            *payload = color.xyz();
+        } else if geometry_info.has_color == 1 {
+            let v0_color = color_buffer[color_offset + v0_index];
+            let v1_color = color_buffer[color_offset + v1_index];
+            let v2_color = color_buffer[color_offset + v2_index];
+            let color =
+                v0_color * barycentrics.x + v1_color * barycentrics.y + v2_color * barycentrics.z;
+            *payload = (color * material_info.base_color_factor).xyz();
+        } else {
+            *payload = material_info.base_color_factor.xyz();
+        }
     }
+
+    // if geometry_info.has_color == 1 {
+    //     let v0_color = color_buffer[color_offset + v0_index];
+    //     let v1_color = color_buffer[color_offset + v1_index];
+    //     let v2_color = color_buffer[color_offset + v2_index];
+    //     let color =
+    //         v0_color * barycentrics.x + v1_color * barycentrics.y + v2_color * barycentrics.z;
+    //     *payload = (color * material_info.base_color_factor).xyz();
+    // }
+    // } else if geometry_info.has_tex_coord == 1 {
+    //     let v0_tex_coord = tex_coord_buffer[tex_coord_offset + v0_index];
+    //     let v1_tex_coord = tex_coord_buffer[tex_coord_offset + v1_index];
+    //     let v2_tex_coord = tex_coord_buffer[tex_coord_offset + v2_index];
+    //     *payload = Vec3::splat(0.5);
+    // } else {
+    //     let object_to_world = transform_buffer[instance_id];
+
+    //     let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
+    //     // let object_normal = (v1 - v0).cross(v2 - v0).normalize();
+    //     let world_position = object_to_world.transform_point3(object_position);
+    //     let world_v0 = object_to_world.transform_point3(v0);
+    //     let world_v1 = object_to_world.transform_point3(v1);
+    //     let world_v2 = object_to_world.transform_point3(v2);
+    //     let mut world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
+    //     world_normal = util::facefoward(&world_normal, &world_ray_direction);
+
+    //     *payload = world_normal;
+    // }
 }
 
 #[spirv(miss)]
