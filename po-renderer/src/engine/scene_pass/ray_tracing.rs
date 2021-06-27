@@ -25,6 +25,10 @@ pub struct GeometryInfo {
     pub index_count: u64,
     pub vertex_count: u64,
     pub material_index: u64,
+    pub color_offset: u64,
+    pub tex_coord_offset: u64,
+    pub has_color: u32,
+    pub has_tex_coord: u32,
 }
 
 pub struct RayTracing {
@@ -152,6 +156,20 @@ impl RayTracing {
                 },
                 maligog::DescriptorSetLayoutBinding {
                     binding: 8,
+                    descriptor_type: maligog::DescriptorType::StorageBuffer,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 9,
+                    descriptor_type: maligog::DescriptorType::StorageBuffer,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 10,
                     descriptor_type: maligog::DescriptorType::StorageBuffer,
                     stage_flags: maligog::ShaderStageFlags::ALL,
                     descriptor_count: 1,
@@ -500,6 +518,16 @@ impl super::ScenePass for RayTracing {
                         index_count: i.index_count,
                         vertex_count: i.vertex_count,
                         material_index: i.material_index,
+                        color_offset: i.color_offset.unwrap_or_default(),
+                        tex_coord_offset: i.tex_coord_offset.unwrap_or_default(),
+                        has_color: match i.color_offset {
+                            Some(_) => 1,
+                            None => 0,
+                        },
+                        has_tex_coord: match i.tex_coord_offset {
+                            Some(_) => 1,
+                            None => 0,
+                        },
                     }
                 });
                 self.geometry_infos.extend(convert);
@@ -536,7 +564,19 @@ impl super::ScenePass for RayTracing {
             };
             self.as_descriptor_set.update(btreemap! {
                 8 => maligog::DescriptorUpdate::Buffer(vec![view]),
+                // 9 => maligog::DescriptorUpdate::Buffer(vec![scene.color_buffer()]),
+                // 10 => maligog::DescriptorUpdate::Buffer(vec![scene.tex_coord_buffer()]),
             });
+            if let Some(b) = scene.color_buffer() {
+                self.as_descriptor_set.update(btreemap! {
+                    9 => maligog::DescriptorUpdate::Buffer(vec![b]),
+                });
+            }
+            if let Some(b) = scene.tex_coord_buffer() {
+                self.as_descriptor_set.update(btreemap! {
+                    10 => maligog::DescriptorUpdate::Buffer(vec![b]),
+                });
+            }
         }
     }
 }

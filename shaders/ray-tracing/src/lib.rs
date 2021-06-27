@@ -99,11 +99,15 @@ pub struct ShaderRecordData {
 }
 
 pub struct GeometryInfo {
-    index_offset: u64,
-    vertex_offset: u64,
-    index_count: u64,
-    vertex_count: u64,
-    material_index: u64,
+    pub index_offset: u64,
+    pub vertex_offset: u64,
+    pub index_count: u64,
+    pub vertex_count: u64,
+    pub material_index: u64,
+    pub color_offset: u64,
+    pub tex_coord_offset: u64,
+    pub has_color: u32,
+    pub has_tex_coord: u32,
 }
 
 pub struct MaterialInfo {
@@ -133,6 +137,8 @@ pub fn closest_hit(
     #[spirv(descriptor_set = 0, binding = 6)] samplers: &RuntimeArray<Sampler>,
     #[spirv(descriptor_set = 0, binding = 7)] images: &RuntimeArray<Image2dU>,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 8)] material_infos: &mut [MaterialInfo],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 9)] color_buffer: &mut [Vec4],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 10)] tex_coord_buffer: &mut [Vec2],
     #[spirv(push_constant)] camera_info: &CameraInfo,
 ) {
     let barycentrics = vec3(1.0 - hit_attr.x - hit_attr.y, hit_attr.x, hit_attr.y);
@@ -141,6 +147,10 @@ pub fn closest_hit(
         &geometry_infos[geometry_info_offsets[instance_custom_index] as usize + geometry_index];
     let index_offset = (geometry_info.index_offset / 4) as usize; // by index
     let vertex_offset = (geometry_info.vertex_offset / 4) as usize; // by index
+    let color_offset = (geometry_info.color_offset / 8) as usize; // by index
+    let tex_coord_offset = (geometry_info.tex_coord_offset / 16) as usize; // by index
+
+    let material_info = &material_infos[geometry_info.material_index as usize];
 
     let v0_index = index_buffer[index_offset + primitive_id * 3] as usize;
     let v0 = vec3(
@@ -161,20 +171,32 @@ pub fn closest_hit(
         vertex_buffer[vertex_offset + v2_index * 3 + 2],
     );
 
-    let object_to_world = transform_buffer[instance_id];
+    if geometry_info.has_color == 1 {
+        let v0_color = color_buffer[color_offset + v0_index];
+        let v1_color = color_buffer[color_offset + v1_index];
+        let v2_color = color_buffer[color_offset + v2_index];
+        let color =
+            v0_color * barycentrics.x + v1_color * barycentrics.y + v2_color * barycentrics.z;
+        *payload = (color * material_info.base_color_factor).xyz();
+    } else if geometry_info.has_tex_coord == 1 {
+        let v0_tex_coord = tex_coord_buffer[tex_coord_offset + v0_index];
+        let v1_tex_coord = tex_coord_buffer[tex_coord_offset + v1_index];
+        let v2_tex_coord = tex_coord_buffer[tex_coord_offset + v2_index];
+        *payload = Vec3::splat(0.5);
+    } else {
+        let object_to_world = transform_buffer[instance_id];
 
-    let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
-    // let object_normal = (v1 - v0).cross(v2 - v0).normalize();
-    let world_position = object_to_world.transform_point3(object_position);
-    let world_v0 = object_to_world.transform_point3(v0);
-    let world_v1 = object_to_world.transform_point3(v1);
-    let world_v2 = object_to_world.transform_point3(v2);
-    let mut world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
-    world_normal = util::facefoward(&world_normal, &world_ray_direction);
+        let object_position = v0 * barycentrics.x + v1 * barycentrics.y + v2 * barycentrics.z;
+        // let object_normal = (v1 - v0).cross(v2 - v0).normalize();
+        let world_position = object_to_world.transform_point3(object_position);
+        let world_v0 = object_to_world.transform_point3(v0);
+        let world_v1 = object_to_world.transform_point3(v1);
+        let world_v2 = object_to_world.transform_point3(v2);
+        let mut world_normal = (world_v1 - world_v0).cross(world_v2 - world_v0).normalize();
+        world_normal = util::facefoward(&world_normal, &world_ray_direction);
 
-    let material_info = &material_infos[geometry_info.material_index as usize];
-
-    *payload = material_info.base_color_factor.xyz();
+        *payload = world_normal;
+    }
 }
 
 #[spirv(miss)]
