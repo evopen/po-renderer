@@ -147,8 +147,8 @@ pub fn closest_hit(
         &geometry_infos[geometry_info_offsets[instance_custom_index] as usize + geometry_index];
     let index_offset = (geometry_info.index_offset / 4) as usize; // by index
     let vertex_offset = (geometry_info.vertex_offset / 4) as usize; // by index
-    let color_offset = (geometry_info.color_offset / 8) as usize; // by index
-    let tex_coord_offset = (geometry_info.tex_coord_offset / 16) as usize; // by index
+    let color_offset = (geometry_info.color_offset / 16) as usize; // by index
+    let tex_coord_offset = (geometry_info.tex_coord_offset / 8) as usize; // by index
 
     let material_info = &material_infos[geometry_info.material_index as usize];
 
