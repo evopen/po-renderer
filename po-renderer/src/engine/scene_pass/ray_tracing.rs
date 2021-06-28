@@ -24,7 +24,10 @@ pub struct MaterialInfo {
     has_base_color_texture: u32,
     base_color_sampler_index: u32,
     base_color_image_index: u32,
-    padding: u32,
+    has_metallic_roughness_texture: u32,
+    metallic_roughness_sampler_index: u32,
+    metallic_roughness_image_index: u32,
+    padding: u64,
 }
 
 #[repr(C)]
@@ -569,10 +572,18 @@ impl super::ScenePass for RayTracing {
                     let mut has_base_color_texture = 0;
                     let mut base_color_sampler_index = 0;
                     let mut base_color_image_index = 0;
+                    let mut has_metallic_roughness_texture = 0;
+                    let mut metallic_roughness_sampler_index = 0;
+                    let mut metallic_roughness_image_index = 0;
                     if let Some(texture) = i.base_color_texture {
                         has_base_color_texture = 1;
                         base_color_sampler_index = texture.sampler_index;
                         base_color_image_index = texture.image_index;
+                    }
+                    if let Some(texture) = i.metallic_roughness_texture {
+                        has_metallic_roughness_texture = 1;
+                        metallic_roughness_sampler_index = texture.sampler_index;
+                        metallic_roughness_image_index = texture.image_index;
                     }
 
                     MaterialInfo {
@@ -580,6 +591,9 @@ impl super::ScenePass for RayTracing {
                         has_base_color_texture,
                         base_color_sampler_index,
                         base_color_image_index,
+                        has_metallic_roughness_texture,
+                        metallic_roughness_sampler_index,
+                        metallic_roughness_image_index,
                         padding: 0,
                     }
                 })

@@ -20,5 +20,6 @@ pub fn spirv_builder(path_to_crate: &str) -> spirv_builder::SpirvBuilder {
         .extension("SPV_KHR_ray_tracing")
         .extension("SPV_EXT_descriptor_indexing")
         .name_variables(false)
+        .scalar_block_layout(true)
         .print_metadata(spirv_builder::MetadataPrintout::None)
 }

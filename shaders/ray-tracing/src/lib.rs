@@ -98,6 +98,7 @@ pub struct ShaderRecordData {
     vertex_offset: u32,
 }
 
+#[repr(C)]
 pub struct GeometryInfo {
     pub index_offset: u64,
     pub vertex_offset: u64,
@@ -110,12 +111,16 @@ pub struct GeometryInfo {
     pub has_tex_coord: u32,
 }
 
+#[repr(C)]
 pub struct MaterialInfo {
     base_color_factor: glam::Vec4,
     has_base_color_texture: u32,
     base_color_sampler_index: u32,
     base_color_image_index: u32,
-    padding: u32,
+    has_metallic_roughness_texture: u32,
+    metallic_roughness_sampler_index: u32,
+    metallic_roughness_image_index: u32,
+    padding: u64,
 }
 
 #[spirv(closest_hit)]
