@@ -21,9 +21,9 @@ pub struct CameraInfo {
 #[derive(Copy, Clone, Debug, Zeroable, Pod)]
 pub struct MaterialInfo {
     base_color_factor: glam::Vec4,
-    has_color_texture: u32,
-    sampler_index: u32,
-    image_index: u32,
+    has_base_color_texture: u32,
+    base_color_sampler_index: u32,
+    base_color_image_index: u32,
     padding: u32,
 }
 
@@ -566,20 +566,20 @@ impl super::ScenePass for RayTracing {
                 .material_infos()
                 .iter()
                 .map(|i| {
-                    let mut has_color_texture = 0;
-                    let mut sampler_index = 0;
-                    let mut image_index = 0;
+                    let mut has_base_color_texture = 0;
+                    let mut base_color_sampler_index = 0;
+                    let mut base_color_image_index = 0;
                     if let Some(texture) = i.base_color_texture {
-                        has_color_texture = 1;
-                        sampler_index = texture.sampler_index;
-                        image_index = texture.image_index;
+                        has_base_color_texture = 1;
+                        base_color_sampler_index = texture.sampler_index;
+                        base_color_image_index = texture.image_index;
                     }
 
                     MaterialInfo {
                         base_color_factor: i.base_color_factor,
-                        has_color_texture,
-                        sampler_index,
-                        image_index,
+                        has_base_color_texture,
+                        base_color_sampler_index,
+                        base_color_image_index,
                         padding: 0,
                     }
                 })

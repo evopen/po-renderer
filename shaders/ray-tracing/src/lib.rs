@@ -112,9 +112,9 @@ pub struct GeometryInfo {
 
 pub struct MaterialInfo {
     base_color_factor: glam::Vec4,
-    has_texture: u32,
-    sampler_index: u32,
-    image_index: u32,
+    has_base_color_texture: u32,
+    base_color_sampler_index: u32,
+    base_color_image_index: u32,
     padding: u32,
 }
 
@@ -193,9 +193,10 @@ pub fn closest_hit(
         let tex_coord = v0_tex_coord * barycentrics.x
             + v1_tex_coord * barycentrics.y
             + v2_tex_coord * barycentrics.z;
-        if material_info.has_texture == 1 {
-            let sampler = unsafe { samplers.index(material_info.sampler_index as usize) };
-            let image = unsafe { images.index(material_info.image_index as usize) };
+        if material_info.has_base_color_texture == 1 {
+            let sampler =
+                unsafe { samplers.index(material_info.base_color_sampler_index as usize) };
+            let image = unsafe { images.index(material_info.base_color_image_index as usize) };
             let texel: Vec4 = image.sample_by_lod(*sampler, tex_coord, 0.0);
             let color = texel * material_info.base_color_factor;
             *payload = color.xyz();
