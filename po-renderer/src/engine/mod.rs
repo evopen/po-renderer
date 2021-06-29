@@ -1,8 +1,10 @@
 mod camera;
 mod descriptor;
 mod input;
+mod po;
 mod scene_pass;
 mod ui;
+
 pub mod util;
 
 pub use descriptor::DescriptorHelper;
@@ -42,6 +44,7 @@ pub struct Engine {
     ray_tracing: Rc<RefCell<scene_pass::RayTracing>>,
     skymap: maligog::Image,
     skymap_view: maligog::ImageView,
+    po: po::Po,
 }
 
 impl Engine {
@@ -136,6 +139,8 @@ impl Engine {
         };
         let skymap_view = skymap.create_view();
 
+        let po = po::Po::new(&device);
+
         Self {
             device,
             swapchain,
@@ -160,6 +165,7 @@ impl Engine {
             ray_tracing,
             skymap,
             skymap_view,
+            po,
         }
     }
 
@@ -170,7 +176,13 @@ impl Engine {
             .update_time(self.start_instant.elapsed().as_secs_f64());
 
         self.ui_instance.begin_frame();
-        self.draw_ui();
+        if let Some(msg) = self.draw_ui() {
+            match msg {
+                ui::UiMessage::Render => {
+                    log::info!("start rendering");
+                }
+            }
+        }
         let (_, paint_commands) = self.ui_instance.end_frame();
         self.paint_jobs = self.ui_instance.context().tessellate(paint_commands);
 

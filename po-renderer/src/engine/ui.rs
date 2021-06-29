@@ -1,8 +1,13 @@
 use egui_maligog::egui;
 use image::GenericImageView;
 
+pub enum UiMessage {
+    Render,
+}
+
 impl super::Engine {
-    pub fn draw_ui(&mut self) {
+    pub fn draw_ui(&mut self) -> Option<UiMessage> {
+        let mut msg = None;
         egui::TopPanel::top(egui::Id::new("menu bar")).show(
             &self.ui_instance.context().clone(),
             |ui| {
@@ -90,7 +95,14 @@ impl super::Engine {
                         ui.label(format!("Frame time: {:.2}", self.frame_time * 1000.0));
                     },
                 );
+                egui::Window::new("Render").show(&self.ui_instance.context(), |ui| {
+                    if ui.button("Render").clicked() {
+                        msg = Some(UiMessage::Render);
+                    }
+                })
             });
         // egui::SidePanel::left("left panel", 500.0).show(&self.ui_instance.context(), |ui| {});
+
+        return msg;
     }
 }
