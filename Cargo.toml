@@ -8,3 +8,6 @@ members = [
 opt-level = 3
 
 
+[profile.dev.package.maligog]
+opt-level = 0
+debug = true
