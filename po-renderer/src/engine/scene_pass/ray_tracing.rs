@@ -445,47 +445,7 @@ impl super::ScenePass for RayTracing {
                 31,
             );
         });
-        recorder.blit_image(
-            &self.color_image,
-            maligog::ImageLayout::GENERAL,
-            &image_view.image(),
-            vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-            &[vk::ImageBlit::builder()
-                .src_subresource(
-                    vk::ImageSubresourceLayers::builder()
-                        .aspect_mask(vk::ImageAspectFlags::COLOR)
-                        .layer_count(1)
-                        .base_array_layer(0)
-                        .mip_level(0)
-                        .build(),
-                )
-                .src_offsets([
-                    vk::Offset3D { x: 0, y: 0, z: 0 },
-                    vk::Offset3D {
-                        x: self.color_image.width() as i32,
-                        y: self.color_image.height() as i32,
-                        z: 1,
-                    },
-                ])
-                .dst_offsets([
-                    vk::Offset3D { x: 0, y: 0, z: 0 },
-                    vk::Offset3D {
-                        x: image_view.width() as i32,
-                        y: image_view.height() as i32,
-                        z: 1,
-                    },
-                ])
-                .dst_subresource(
-                    vk::ImageSubresourceLayers::builder()
-                        .aspect_mask(vk::ImageAspectFlags::COLOR)
-                        .layer_count(1)
-                        .base_array_layer(0)
-                        .mip_level(0)
-                        .build(),
-                )
-                .build()],
-            vk::Filter::NEAREST,
-        );
+        util::cmd_blit_image(recorder, &self.color_image, &image_view.image());
     }
 
     fn update(&mut self) {

@@ -18,6 +18,7 @@ use egui_winit_platform::PlatformDescriptor;
 
 use maligog::vk;
 
+use crate::engine::po::RenderSettings;
 use crate::{vec3, Vec3};
 pub use camera::{Camera, Direction};
 
@@ -180,6 +181,17 @@ impl Engine {
             match msg {
                 ui::UiMessage::Render => {
                     log::info!("start rendering");
+                    if let Some(scene) = self.scene.as_ref() {
+                        let results =
+                            self.po
+                                .render(&RenderSettings::default(), scene, &self.skymap_view);
+                        for result in results {
+                            match result.image.format() {
+                                maligog::Format::R32G32B32A32_SFLOAT => {}
+                                _ => {}
+                            }
+                        }
+                    }
                 }
             }
         }

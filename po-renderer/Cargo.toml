@@ -27,7 +27,7 @@ maplit = "1.0"
 image = "0.23"
 backtrace = "0.3"
 rand = { version = "0.8", features = ["small_rng"] }
-
+indexmap = "1.7.0"
 
 [dependencies.spirv-builder]
 git = "https://github.com/EmbarkStudios/rust-gpu"
