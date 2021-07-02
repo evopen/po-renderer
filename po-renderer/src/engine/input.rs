@@ -1,3 +1,5 @@
+use indexmap::IndexMap;
+
 use super::camera::Direction;
 
 #[derive(Debug, Default)]
@@ -5,12 +7,18 @@ pub struct Input {
     pub(super) command: String,
     pub(super) move_speed: f32,
     pub(super) in_control: bool,
+    pub(super) pressed_keys: IndexMap<winit::event::VirtualKeyCode, bool>,
 }
 
 impl super::Engine {
-    pub fn process_key(&mut self, keyboard_input: &winit::event::KeyboardInput) {
-        if let Some(keycode) = keyboard_input.virtual_keycode {
-            match keycode {
+    pub fn process_move(&mut self) {
+        for (key, _) in self
+            .input
+            .pressed_keys
+            .iter()
+            .filter(|(key, pressed)| **pressed)
+        {
+            match key {
                 winit::event::VirtualKeyCode::W => {
                     self.camera.process_keyboard(
                         Direction::Forward,
@@ -48,6 +56,18 @@ impl super::Engine {
                     );
                 }
                 _ => {}
+            }
+        }
+    }
+    pub fn process_key(&mut self, keyboard_input: &winit::event::KeyboardInput) {
+        if let Some(keycode) = keyboard_input.virtual_keycode {
+            match keyboard_input.state {
+                winit::event::ElementState::Pressed => {
+                    self.input.pressed_keys.insert(keycode, true);
+                }
+                winit::event::ElementState::Released => {
+                    self.input.pressed_keys.insert(keycode, false);
+                }
             }
         }
     }

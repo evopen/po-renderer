@@ -79,7 +79,7 @@ impl Engine {
             std::f32::consts::FRAC_PI_3,
         );
 
-        let move_speed = 1000.0;
+        let move_speed = 3.0;
         let in_control = false;
 
         let scale_factor = window.scale_factor();
@@ -234,21 +234,21 @@ impl Engine {
                     winit::event::DeviceEvent::MouseMotion { delta } => {
                         if self.input.in_control {
                             self.camera.process_mouse_movement(
-                                delta.0 as f32 / 1000.0,
-                                delta.1 as f32 / 1000.0,
+                                delta.0 as f32 / 500.0,
+                                delta.1 as f32 / 500.0,
                             );
                         }
                     }
                     winit::event::DeviceEvent::Key(input) => {
-                        if self.input.in_control {
-                            self.process_key(input);
-                        }
+                        self.process_key(input);
                     }
                     _ => {}
                 }
             }
             _ => {}
         }
+
+        self.process_move();
 
         // log::info!(
         //     "{} {}",
