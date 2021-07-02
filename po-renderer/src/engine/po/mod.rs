@@ -5,6 +5,8 @@ use maplit::btreemap;
 
 use bytemuck::{Pod, Zeroable};
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Zeroable, Pod)]
 pub struct CameraInfo {
     view_inv: glam::Mat4,
     proj_inv: glam::Mat4,
@@ -47,8 +49,8 @@ pub struct RenderSettings {
 impl Default for RenderSettings {
     fn default() -> Self {
         Self {
-            width: 1920,
-            height: 1080,
+            width: 800,
+            height: 600,
             max_bounce: 5,
             camera: super::Camera::new(
                 Vec3::new(0.0, 0.0, 10.0),
@@ -186,6 +188,13 @@ impl Po {
                 },
                 maligog::DescriptorSetLayoutBinding {
                     binding: 1,
+                    descriptor_type: maligog::DescriptorType::StorageImage,
+                    stage_flags: maligog::ShaderStageFlags::ALL,
+                    descriptor_count: 1,
+                    variable_count: false,
+                },
+                maligog::DescriptorSetLayoutBinding {
+                    binding: 3,
                     descriptor_type: maligog::DescriptorType::StorageImage,
                     stage_flags: maligog::ShaderStageFlags::ALL,
                     descriptor_count: 1,
@@ -337,13 +346,14 @@ impl Po {
         settings: &RenderSettings,
         scene: &maligog_gltf::Scene,
         skymap: &maligog::ImageView,
+        camera: &crate::engine::Camera,
     ) -> Vec<RenderResult> {
         let depth_image = self.device.create_image(
             Some("depth"),
             maligog::Format::R32_SFLOAT,
             settings.width,
             settings.height,
-            maligog::ImageUsageFlags::STORAGE,
+            maligog::ImageUsageFlags::STORAGE | maligog::ImageUsageFlags::TRANSFER_SRC,
             maligog::MemoryLocation::GpuOnly,
         );
 
@@ -495,11 +505,73 @@ impl Po {
         skymap_descriptor_set.update(btreemap! {
             0 => maligog::DescriptorUpdate::Image(vec![skymap.clone()]),
         });
-        // cmd_buf.encode(|rec| {
-        //     rec.bind_ray_tracing_pipeline(&self.depth_pipeline, |rec| {
-        //         rec.bind_descriptor_sets();
-        //     });
-        // });
+        let mut camera_info = CameraInfo {
+            view_inv: glam::Mat4::look_at_lh(
+                camera.location,
+                camera.location + camera.front,
+                camera.up,
+            )
+            .inverse(),
+            proj_inv: glam::Mat4::perspective_lh(camera.fov, camera.aspect_ratio, 0.001, 10000.0)
+                .inverse(),
+        };
+        let depth_image_buffer = self.device.create_buffer(
+            Some("depth image buffer"),
+            depth_image.linear_size(),
+            maligog::BufferUsageFlags::empty(),
+            maligog::MemoryLocation::GpuToCpu,
+        );
+        cmd_buf.encode(|rec| {
+            rec.bind_ray_tracing_pipeline(&self.depth_pipeline, |rec| {
+                rec.bind_descriptor_sets(
+                    vec![
+                        &as_descriptor_set,
+                        &image_descriptor_set,
+                        &skymap_descriptor_set,
+                    ],
+                    0,
+                );
+                rec.push_constants(
+                    maligog::ShaderStageFlags::RAYGEN_KHR
+                        | maligog::ShaderStageFlags::CLOSEST_HIT_KHR,
+                    &bytemuck::cast_slice(&[camera_info]),
+                );
+                rec.trace_ray(
+                    &shader_binding_tables.ray_gen_table(),
+                    &shader_binding_tables.miss_table(),
+                    &shader_binding_tables.hit_table(),
+                    &shader_binding_tables.callable_table(),
+                    settings.width,
+                    settings.height,
+                    31,
+                );
+                rec.copy_image_to_buffer(
+                    &depth_image,
+                    maligog::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                    &depth_image_buffer,
+                );
+            });
+        });
+        if let Some(data) = depth_image_buffer.lock_memory().unwrap().mapped_slice() {
+            let pixels: &[f32] = bytemuck::cast_slice(data);
+            dbg!(&pixels.len());
+            let pixels = pixels
+                .iter()
+                .map(|f| ordered_float::NotNan::new(*f).unwrap())
+                .collect::<Vec<_>>();
+            let max = pixels.iter().max().unwrap().into_inner();
+            dbg!(&max);
+            let width = depth_image.width() as usize;
+            let height = depth_image.height() as usize;
+            exr::prelude::write_rgb_file("depth.exr", width, height, |x, y| {
+                (
+                    // generate (or lookup in your own image) an f32 rgb color for each of the 2048x2048 pixels
+                    pixels[y * width + x].into_inner() / max, // red
+                    pixels[y * width + x].into_inner() / max, // green
+                    pixels[y * width + x].into_inner() / max, // blue
+                )
+            });
+        }
 
         Vec::new()
     }

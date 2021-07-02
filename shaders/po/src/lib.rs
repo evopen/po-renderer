@@ -28,6 +28,8 @@ pub struct CameraInfo {
     projection_inv: Mat4,
 }
 
+unsafe impl spirv_std::vector::Vector<f32, 1> for f32 {}
+
 #[spirv(ray_generation)]
 pub fn main(
     #[spirv(push_constant)] camera_info: &CameraInfo,
@@ -47,6 +49,16 @@ pub fn main(
         { None },
     >,
     #[spirv(descriptor_set = 1, binding = 1)] ao_image: &mut image::Image<
+        f32,
+        { image::Dimensionality::TwoD },
+        { image::ImageDepth::False },
+        { image::Arrayed::False },
+        { image::Multisampled::False },
+        { image::Sampled::No },
+        { image::ImageFormat::R32f },
+        { None },
+    >,
+    #[spirv(descriptor_set = 1, binding = 3)] depth_image: &mut image::Image<
         f32,
         { image::Dimensionality::TwoD },
         { image::ImageDepth::False },
@@ -89,7 +101,7 @@ pub fn main(
 
         let xy = UVec2::new(pixel.x, launch_size.y - pixel.y);
 
-        color_image.write(xy, payload.extend(1.0));
+        depth_image.write(xy, payload.x);
     }
 }
 
