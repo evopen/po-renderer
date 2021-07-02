@@ -390,7 +390,7 @@ impl Po {
             &self.descriptor_pool,
             &self.image_descriptor_set_layout,
             btreemap! {
-                0 => maligog::DescriptorUpdate::Image(vec![depth_image.create_view()]),
+                3 => maligog::DescriptorUpdate::Image(vec![depth_image.create_view()]),
             },
         );
 
@@ -552,23 +552,17 @@ impl Po {
                 );
             });
         });
+        self.device.graphics_queue().submit_blocking(&[cmd_buf]);
         if let Some(data) = depth_image_buffer.lock_memory().unwrap().mapped_slice() {
             let pixels: &[f32] = bytemuck::cast_slice(data);
-            dbg!(&pixels.len());
-            let pixels = pixels
-                .iter()
-                .map(|f| ordered_float::NotNan::new(*f).unwrap())
-                .collect::<Vec<_>>();
-            let max = pixels.iter().max().unwrap().into_inner();
-            dbg!(&max);
             let width = depth_image.width() as usize;
             let height = depth_image.height() as usize;
             exr::prelude::write_rgb_file("depth.exr", width, height, |x, y| {
                 (
                     // generate (or lookup in your own image) an f32 rgb color for each of the 2048x2048 pixels
-                    pixels[y * width + x].into_inner() / max, // red
-                    pixels[y * width + x].into_inner() / max, // green
-                    pixels[y * width + x].into_inner() / max, // blue
+                    pixels[y * width + x], // red
+                    pixels[y * width + x], // green
+                    pixels[y * width + x], // blue
                 )
             });
         }

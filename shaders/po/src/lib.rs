@@ -28,7 +28,12 @@ pub struct CameraInfo {
     projection_inv: Mat4,
 }
 
-unsafe impl spirv_std::vector::Vector<f32, 1> for f32 {}
+#[derive(Default)]
+struct A {
+    inner: f32,
+}
+
+unsafe impl spirv_std::vector::Vector<f32, 1> for A {}
 
 #[spirv(ray_generation)]
 pub fn main(
@@ -101,7 +106,7 @@ pub fn main(
 
         let xy = UVec2::new(pixel.x, launch_size.y - pixel.y);
 
-        depth_image.write(xy, payload.x);
+        depth_image.write(xy, A { inner: payload.x });
     }
 }
 
